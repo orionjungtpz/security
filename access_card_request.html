@@ -287,8 +287,8 @@
 
       <div class="divider">신청 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>성명</th><th>사번</th><th>직급</th><th>영문이름</th><th>부서</th><th>타워 No.</th><th></th></tr></thead>
-        <tbody id="tbodyNew"><tr><td colspan="8"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
+        <thead><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th id="thTowerN">번호</th><th></th></tr></thead>
+        <tbody id="tbodyNew"><tr><td colspan="11"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
       </table></div>
 
       <div class="divider">메일 수신자</div>
@@ -345,8 +345,8 @@
 
       <div class="divider">삭제 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>성명</th><th>사번</th><th>직급</th><th>영문이름</th><th>부서</th><th>타워 No.</th><th></th></tr></thead>
-        <tbody id="tbodyDel"><tr><td colspan="8"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
+        <thead><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th id="thTowerD">번호</th><th></th></tr></thead>
+        <tbody id="tbodyDel"><tr><td colspan="11"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
       </table></div>
 
       <div class="divider">메일 수신자</div>
@@ -646,7 +646,7 @@ async function addRow(type) {
 
   btn.disabled=false; sp.style.display='none'; txt.textContent='+ 추가';
 
-  const newRow = found ? {...found} : {사번:empid||'',성명:name||'',영문이름:'',직급:'',부서:'',타워No:''};
+  const newRow = found ? {...found} : {출입증:'',직급:'',사번:empid||'',성명:name||'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',서울역번호:'',센터식당번호:''};
   rows[type].push(newRow);
   renderTable(type);
 
@@ -660,35 +660,64 @@ async function addRow(type) {
 }
 
 // ════ 테이블 렌더 ════
+// 사업장+업무 조합 → 번호 컬럼 결정
+// 엑셀 컬럼명: 송도번호, 센터번호, 서울역번호, 센터식당번호
+function getTowerColKey() {
+  const sites = [...curSites];
+  const works = [...curWorks];
+  if (sites.includes('센터') && works.includes('식당')) return '센터식당번호';
+  if (sites.includes('센터')) return '센터번호';
+  return '송도번호';
+}
+
+function getTowerColLabel() {
+  const map = {'송도번호':'송도 No.','센터번호':'센터 No.','서울역번호':'서울역 No.','센터식당번호':'센터식당 No.'};
+  return map[getTowerColKey()] || 'No.';
+}
+
 function renderTable(type) {
-  const tbody = document.getElementById(type==='new'?'tbodyNew':'tbodyDel');
-  const data = rows[type];
   const isN = type==='new';
+  const tbody = document.getElementById(isN?'tbodyNew':'tbodyDel');
+  const data = rows[type];
+
   document.getElementById(isN?'cntNew':'cntDel').textContent = `${data.length}명`;
   document.getElementById(isN?'actLN':'actLD').textContent =
     data.length ? `총 ${data.length}명 · 전송 전 내용을 확인해주세요` : '인원을 추가한 후 전송하세요';
 
+  // 번호 헤더 동적 업데이트
+  const th = document.getElementById(isN?'thTowerN':'thTowerD');
+  if (th) th.textContent = getTowerColLabel();
+
   if (!data.length) {
-    tbody.innerHTML='<tr><td colspan="8"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr>';
+    tbody.innerHTML='<tr><td colspan="11"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr>';
     return;
   }
+
   const ro = RANKS.map(r=>`<option value="${r}">${r}</option>`).join('');
+  const colKey = getTowerColKey();
+
   tbody.innerHTML = data.map((r,i)=>`
     <tr>
       <td>${i+1}</td>
-      <td><input class="cell-input ${r.영문이름?'af':''}" value="${esc(r.성명)}" placeholder="성명" oninput="upd('${type}',${i},'성명',this.value)"/></td>
-      <td><input class="cell-input ${r.사번?'af':''}" value="${esc(r.사번)}" placeholder="사번" oninput="upd('${type}',${i},'사번',this.value)"/></td>
+      <td><input class="cell-input ${r.출입증?'af':''}" value="${esc(r.출입증||'')}" placeholder="출입증" oninput="upd('${type}',${i},'출입증',this.value)"/></td>
       <td><select class="cell-select" onchange="upd('${type}',${i},'직급',this.value)"><option value="">-</option>${ro}</select></td>
-      <td><input class="cell-input ${r.영문이름?'af':''}" value="${esc(r.영문이름)}" placeholder="영문이름" oninput="upd('${type}',${i},'영문이름',this.value)"/></td>
-      <td><input class="cell-input ${r.부서?'af':''}" value="${esc(r.부서)}" placeholder="부서" oninput="upd('${type}',${i},'부서',this.value)"/></td>
-      <td><input class="cell-input ${r.타워No?'af':''}" value="${esc(r.타워No)}" placeholder="T-000" oninput="upd('${type}',${i},'타워No',this.value)"/></td>
+      <td><input class="cell-input ${r.사번?'af':''}" value="${esc(r.사번||'')}" placeholder="사번" oninput="upd('${type}',${i},'사번',this.value)"/></td>
+      <td><input class="cell-input ${r.성명?'af':''}" value="${esc(r.성명||'')}" placeholder="성명" oninput="upd('${type}',${i},'성명',this.value)"/></td>
+      <td><input class="cell-input ${r.영문이름?'af':''}" value="${esc(r.영문이름||'')}" placeholder="영문이름" oninput="upd('${type}',${i},'영문이름',this.value)"/></td>
+      <td><input class="cell-input ${r.부문?'af':''}" value="${esc(r.부문||'')}" placeholder="부문" oninput="upd('${type}',${i},'부문',this.value)"/></td>
+      <td><input class="cell-input ${r.부서?'af':''}" value="${esc(r.부서||'')}" placeholder="부서" oninput="upd('${type}',${i},'부서',this.value)"/></td>
+      <td><input class="cell-input ${r.휴대폰?'af':''}" value="${esc(r.휴대폰||'')}" placeholder="휴대폰" oninput="upd('${type}',${i},'휴대폰',this.value)"/></td>
+      <td><input class="cell-input ${r[colKey]?'af':''}" value="${esc(r[colKey]||'')}" placeholder="번호" oninput="upd('${type}',${i},'${colKey}',this.value)"/></td>
       <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
     </tr>`).join('');
+
+  // 직급 select 값 복원
   data.forEach((r,i)=>{
-    const sel=tbody.querySelectorAll('select')[i];
-    if(sel&&r.직급)sel.value=r.직급;
+    const sel = tbody.querySelectorAll('select')[i];
+    if (sel && r.직급) sel.value = r.직급;
   });
 }
+
 
 function upd(type,i,f,v){if(rows[type][i])rows[type][i][f]=v;}
 function delRow(type,i){rows[type].splice(i,1);renderTable(type);}
@@ -737,7 +766,16 @@ async function submitForm(type){
     사업장:[...curSites].join(','), 업무구분:[...curWorks].join(','),
     요청일:date, 출입증구분:card, 비고:note,
     수신자목록:getRcpts(isN?'rcptN':'rcptD'),
-    인원목록:rows[type].map(r=>({성명:r.성명,사번:r.사번,직급:r.직급||'',영문이름:r.영문이름||'',부서:r.부서||'',포스코타워송도No:r.타워No||''})),
+    인원목록:rows[type].map(r=>{
+      const colKey = getTowerColKey();
+      return {
+        출입증:r.출입증||'', 직급:r.직급||'',
+        사번:r.사번, 성명:r.성명,
+        영문이름:r.영문이름||'', 부문:r.부문||'', 부서:r.부서||'',
+        휴대폰:r.휴대폰||'',
+        번호컬럼:colKey, 번호:r[colKey]||'',
+      };
+    }),
     메일테이블HTML:buildEmailTable(type,date,card,note,isN?null:document.getElementById('d_reason').value),
   };
   if(!isN)payload.삭제사유=document.getElementById('d_reason').value;
@@ -756,29 +794,29 @@ async function submitForm(type){
 // ════ 메일 HTML 테이블 ════
 function buildEmailTable(type,date,card,note,reason){
   const isN=type==='new';
+  const colKey=getTowerColKey();
+  const colLabel=getTowerColLabel();
   const body=rows[type].map((r,i)=>`
     <tr style="background:${i%2?'#F4F6FA':'#fff'}">
       <td style="text-align:center;padding:8px 10px">${i+1}</td>
-      <td style="padding:8px 10px">${r.성명||''}</td>
-      <td style="padding:8px 10px">${r.사번||''}</td>
+      <td style="padding:8px 10px">${r.출입증||''}</td>
       <td style="padding:8px 10px">${r.직급||''}</td>
+      <td style="padding:8px 10px">${r.사번||''}</td>
+      <td style="padding:8px 10px">${r.성명||''}</td>
       <td style="padding:8px 10px">${r.영문이름||''}</td>
+      <td style="padding:8px 10px">${r.부문||''}</td>
       <td style="padding:8px 10px">${r.부서||''}</td>
-      <td style="padding:8px 10px">${r.타워No||''}</td>
+      <td style="padding:8px 10px">${r.휴대폰||''}</td>
+      <td style="padding:8px 10px">${r[colKey]||''}</td>
     </tr>`).join('');
-  return `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;width:100%;max-width:700px">
+  const th = (t) => `<th style="padding:10px 8px;font-weight:600;white-space:nowrap">${t}</th>`;
+  return `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;width:100%">
     <thead><tr style="background:#003087;color:#fff">
-      <th style="padding:10px 10px;font-weight:600">No.</th>
-      <th style="padding:10px 10px;font-weight:600">성명</th>
-      <th style="padding:10px 10px;font-weight:600">사번</th>
-      <th style="padding:10px 10px;font-weight:600">직급</th>
-      <th style="padding:10px 10px;font-weight:600">영문이름</th>
-      <th style="padding:10px 10px;font-weight:600">부서</th>
-      <th style="padding:10px 10px;font-weight:600">포스코타워-송도 No.</th>
+      ${th('No.')}${th('출입증')}${th('직급')}${th('사번')}${th('성명')}${th('영문이름')}${th('부문')}${th('부서')}${th('휴대폰')}${th(colLabel)}
     </tr></thead>
     <tbody>${body}</tbody>
     <tfoot><tr style="background:#E8EEF7">
-      <td colspan="7" style="padding:8px 10px;font-size:12px;color:#5A6480">
+      <td colspan="10" style="padding:8px 10px;font-size:12px;color:#5A6480">
         <b>${[...curSites].join('+')} · ${[...curWorks].join('+')}</b> &nbsp;|&nbsp;
         요청유형: <b>${isN?'신규등록':'삭제요청'}</b> &nbsp;|&nbsp;
         요청일: <b>${date}</b> &nbsp;|&nbsp;
