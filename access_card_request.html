@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>출입증 신청 관리</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+  :root {
+    --navy:#003087; --blue:#0051A2; --blue-light:#EBF3FF;
+    --red:#C0392B; --red-light:#FDECEA;
+    --green:#1A7A3C; --green-light:#E8F5ED;
+    --border:#D0DAE8; --bg:#F0F4FA; --card:#fff;
+    --text:#1A1F2E; --sub:#5A6480; --hint:#9BA5BE;
+    --radius:12px; --shadow:0 2px 16px rgba(0,48,135,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px;}
+
+  header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:200;box-shadow:0 3px 12px rgba(0,48,135,.3);}
+  .hbrand{display:flex;align-items:center;gap:12px;}
+  .hlogo{width:30px;height:30px;background:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--navy);}
+  .htitle{font-size:15px;font-weight:700;}
+  .hsub{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px;}
+  .hdate{font-size:12px;color:rgba(255,255,255,.55);}
+
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 20px;}
+
+  /* ── 사업장/업무 선택 ── */
+  .site-selector{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow);}
+  .site-selector-title{font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px;}
+  .site-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .site-btn{border:1.5px solid var(--border);background:#FAFBFD;border-radius:8px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:500;color:var(--sub);cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:6px;}
+  .site-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light);}
+  .site-btn.active{border-color:var(--navy);background:var(--navy);color:#fff;font-weight:700;}
+
+  .work-row{display:flex;gap:8px;flex-wrap:wrap;min-height:36px;padding-top:4px;}
+  .work-btn{border:1.5px solid var(--border);background:#FAFBFD;border-radius:20px;padding:7px 16px;font-family:inherit;font-size:12.5px;font-weight:500;color:var(--sub);cursor:pointer;transition:all .18s;}
+  .work-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light);}
+  .work-btn.active{border-color:var(--blue);background:var(--blue-light);color:var(--blue);font-weight:700;}
+
+  .sel-label{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .sel-label span{font-size:11px;font-weight:600;color:var(--hint);}
+  .sel-label .sel-tag{font-size:11px;font-weight:700;background:var(--navy);color:#fff;border-radius:4px;padding:2px 8px;}
+
+  /* ── 수신자 미리보기 배너 ── */
+  .rcpt-preview{background:var(--green-light);border:1px solid #C8E6D3;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:12px;color:var(--green);display:none;}
+  .rcpt-preview.show{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;}
+  .rp-label{font-weight:700;white-space:nowrap;}
+  .rp-tags{display:flex;flex-wrap:wrap;gap:5px;}
+  .rp-tag{background:#fff;border:1px solid #C8E6D3;border-radius:12px;padding:2px 10px;font-size:11px;color:var(--green);}
+
+  /* Tabs */
+  .tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;box-shadow:var(--shadow);}
+  .tab{border:none;background:transparent;cursor:pointer;padding:14px 20px;font-family:inherit;font-size:14px;font-weight:500;color:var(--sub);display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
+  .tab:first-child{border-right:1.5px solid var(--border);}
+  .tab.on-new{background:var(--blue-light);color:var(--blue);font-weight:700;}
+  .tab.on-del{background:var(--red-light);color:var(--red);font-weight:700;}
+  .tbadge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;}
+  .tab.on-new .tbadge{background:var(--blue);color:#fff;}
+  .tab.on-del .tbadge{background:var(--red);color:#fff;}
+  .tab:not(.on-new):not(.on-del) .tbadge{background:#E0E4EE;color:var(--hint);}
+
+  /* Card */
+  .card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+  .card-top{padding:18px 24px;border-bottom:1.5px solid var(--bg);display:flex;align-items:center;justify-content:space-between;}
+  .card-top-left{display:flex;align-items:center;gap:12px;}
+  .card-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .ci-new{background:var(--blue-light);}
+  .ci-del{background:var(--red-light);}
+  .card-title{font-size:15px;font-weight:700;}
+  .card-desc{font-size:12px;color:var(--sub);margin-top:2px;}
+  .card-body{padding:22px 24px;}
+  .count-badge{font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;}
+  .cb-new{background:var(--blue-light);color:var(--blue);}
+  .cb-del{background:var(--red-light);color:var(--red);}
+
+  /* Search */
+  .search-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+  .sf label{font-size:11px;font-weight:600;color:var(--sub);display:block;margin-bottom:5px;}
+  .sf input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13.5px;background:#fff;outline:none;transition:border-color .2s,box-shadow .2s;}
+  .sf input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,81,162,.1);}
+  .del-panel .sf input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(192,57,43,.1);}
+  .btn-lookup{border:none;border-radius:8px;height:40px;padding:0 20px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .bl-new{background:var(--blue);color:#fff;}
+  .bl-new:hover{background:#0044AA;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,81,162,.25);}
+  .bl-del{background:var(--red);color:#fff;}
+  .bl-del:hover{background:#A93226;transform:translateY(-1px);}
+  .btn-lookup:disabled{opacity:.5;cursor:not-allowed;transform:none !important;box-shadow:none !important;}
+
+  .lookup-msg{font-size:12px;padding:6px 12px;border-radius:6px;margin-bottom:12px;display:none;}
+  .lookup-msg.show{display:block;}
+  .lm-ok{background:var(--green-light);color:var(--green);border:1px solid #C8E6D3;}
+  .lm-no{background:#FFF8E1;color:#B8860B;border:1px solid #FFE08A;}
+  .lm-dup{background:#FFF0F8;color:#8B0057;border:1px solid #F0C8E0;}
+
+  /* 공통설정 */
+  .common-row{display:grid;gap:12px;margin-bottom:18px;}
+  .cr-new{grid-template-columns:1fr 1fr 1fr;}
+  .cr-del{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .c-field label{font-size:11px;font-weight:600;color:var(--sub);display:block;margin-bottom:5px;}
+  .c-field label .req{color:#E53935;margin-left:2px;}
+  .c-field select,.c-field input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13.5px;color:var(--text);background:#FAFBFD;outline:none;transition:border-color .2s;-webkit-appearance:none;}
+  .c-field select:focus,.c-field input:focus{border-color:var(--blue);}
+  .del-panel .c-field select:focus,.del-panel .c-field input:focus{border-color:var(--red);}
+
+  /* Divider */
+  .divider{font-size:11px;font-weight:700;color:var(--hint);letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin:18px 0 12px;}
+  .divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  .divider-note{font-weight:400;font-size:10px;color:var(--hint);margin-left:4px;text-transform:none;letter-spacing:0;}
+
+  /* Table */
+  .tbl-wrap{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:18px;}
+  .tbl-wrap table{width:100%;border-collapse:collapse;font-size:13px;}
+  .tbl-wrap thead tr{background:var(--navy);color:#fff;}
+  .tbl-wrap thead th{padding:10px 12px;text-align:left;font-weight:600;font-size:11.5px;white-space:nowrap;}
+  .tbl-wrap thead th:first-child{width:36px;text-align:center;}
+  .tbl-wrap thead th:last-child{width:44px;text-align:center;}
+  .tbl-wrap tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+  .tbl-wrap tbody tr:last-child{border-bottom:none;}
+  .tbl-wrap tbody tr:hover{background:#F8FAFF;}
+  .tbl-wrap tbody td{padding:0;vertical-align:middle;}
+  .tbl-wrap tbody td:first-child{text-align:center;color:var(--hint);font-size:12px;font-weight:600;padding:0 12px;}
+  .tbl-wrap tbody td:last-child{text-align:center;padding:0 6px;}
+  .cell-input{width:100%;border:none;background:transparent;padding:10px 12px;font-family:inherit;font-size:13px;color:var(--text);outline:none;transition:background .15s;}
+  .cell-input:focus{background:#F0F7FF;}
+  .del-panel .cell-input:focus{background:#FFF5F5;}
+  .cell-input::placeholder{color:var(--hint);}
+  .cell-input.af{color:var(--blue);font-weight:500;}
+  .del-panel .cell-input.af{color:var(--red);}
+  .cell-select{width:100%;border:none;background:transparent;padding:10px 8px;font-family:inherit;font-size:13px;color:var(--text);outline:none;cursor:pointer;-webkit-appearance:none;}
+  .cell-select:focus{background:#F0F7FF;}
+  .del-panel .cell-select:focus{background:#FFF5F5;}
+  .tbl-empty{padding:32px;text-align:center;color:var(--hint);font-size:13px;}
+  .btn-row-del{background:none;border:none;cursor:pointer;color:var(--hint);font-size:16px;line-height:1;padding:4px 6px;border-radius:5px;transition:all .15s;}
+  .btn-row-del:hover{color:var(--red);background:var(--red-light);}
+
+  /* Recipients */
+  .rcpt-box{background:#F7F9FC;border:1.5px solid var(--border);border-radius:8px;padding:14px 16px;}
+  .rcpt-lbl{font-size:11px;font-weight:600;color:var(--sub);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+  .rcpt-list{display:flex;flex-wrap:wrap;gap:6px;}
+  .rtag{display:flex;align-items:center;gap:5px;background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:5px 10px 5px 9px;}
+  .rtag.auto{border-color:var(--blue-mid,#B8D4F0);background:var(--blue-light);}
+  .rtlbl{font-size:9px;font-weight:800;color:var(--hint);background:var(--bg);border-radius:3px;padding:1px 4px;}
+  .rtag.auto .rtlbl{color:var(--blue);background:#D8ECFF;}
+  .rtag input[type=email]{border:none;background:transparent;font-family:inherit;font-size:12px;color:var(--text);outline:none;width:180px;padding:0;}
+  .rtag-rm{background:none;border:none;cursor:pointer;color:var(--hint);font-size:14px;line-height:1;padding:0 2px;transition:color .15s;}
+  .rtag-rm:hover{color:var(--red);}
+  .rtag-add{background:transparent;border:1.5px dashed var(--border);border-radius:20px;padding:5px 14px;font-family:inherit;font-size:12px;color:var(--hint);cursor:pointer;transition:all .15s;}
+  .rtag-add:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light);}
+  .btn-rcpt-clear{background:transparent;border:none;font-family:inherit;font-size:11px;color:var(--hint);cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s;}
+  .btn-rcpt-clear:hover{color:var(--red);background:var(--red-light);}
+
+  /* Actions */
+  .actions{display:flex;align-items:center;justify-content:space-between;padding-top:18px;border-top:1.5px solid var(--bg);margin-top:18px;}
+  .actions-left{font-size:12px;color:var(--hint);}
+  .actions-right{display:flex;gap:10px;}
+  .btn-reset{background:transparent;border:1.5px solid var(--border);border-radius:8px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:500;color:var(--sub);cursor:pointer;transition:all .15s;}
+  .btn-reset:hover{border-color:var(--sub);color:var(--text);}
+  .btn-submit{border:none;border-radius:8px;padding:10px 26px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;}
+  .bs-new{background:var(--blue);color:#fff;}
+  .bs-new:hover{background:#0044AA;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,81,162,.28);}
+  .bs-del{background:var(--red);color:#fff;}
+  .bs-del:hover{background:#A93226;transform:translateY(-1px);}
+
+  /* Config */
+  .cfg-row{display:flex;justify-content:flex-end;margin-bottom:12px;}
+  .cfg-btn{background:var(--card);border:1.5px solid var(--border);border-radius:7px;padding:7px 14px;font-family:inherit;font-size:12px;color:var(--hint);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;}
+  .cfg-btn:hover{border-color:var(--blue);color:var(--blue);}
+  .cfg-panel{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:18px;box-shadow:var(--shadow);display:none;}
+  .cfg-panel.open{display:block;}
+  .cfg-panel h3{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:14px;}
+  .cfg-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .cfg-f label{font-size:11px;font-weight:600;color:var(--hint);display:block;margin-bottom:5px;}
+  .cfg-f input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 11px;font-family:inherit;font-size:12px;background:#FAFBFD;outline:none;}
+  .cfg-f input:focus{border-color:var(--blue);}
+
+  .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(16px);padding:12px 22px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:0 8px 28px rgba(0,0,0,.18);opacity:0;transition:all .28s;pointer-events:none;z-index:9999;white-space:nowrap;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .t-info{background:#1A1F2E;color:#fff;} .t-ok{background:#1A7A3C;color:#fff;} .t-err{background:#7B1A1A;color:#fff;} .t-warn{background:#7A5A00;color:#fff;}
+
+  @media(max-width:640px){
+    .search-row{grid-template-columns:1fr 1fr;}
+    .btn-lookup{grid-column:1/-1;width:100%;justify-content:center;}
+    .cr-new,.cr-del{grid-template-columns:1fr 1fr;}
+    .cfg-grid{grid-template-columns:1fr;}
+    .tbl-wrap{overflow-x:auto;}
+    .card-body{padding:16px;}
+    .site-row{gap:6px;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="hbrand">
+    <div class="hlogo">PSCI</div>
+    <div><div class="htitle">출입증 신청 관리</div><div class="hsub">포스코타워 송도 · 행정지원그룹</div></div>
+  </div>
+  <div class="hdate" id="hdate"></div>
+</header>
+
+<div class="wrap">
+
+  <!-- Config -->
+  <div class="cfg-row"><button class="cfg-btn" onclick="toggleCfg()">⚙️ Flow URL 설정</button></div>
+  <div class="cfg-panel" id="cfgPanel">
+    <h3>⚙️ POWER AUTOMATE FLOW URL</h3>
+    <div class="cfg-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+      <div class="cfg-f"><label>📧 수신자 목록 Flow URL <span style="color:#E53935">*</span></label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="url" id="cfgRecipients" placeholder="https://prod-xx.logic.azure.com/..." style="flex:1"/>
+          <button onclick="loadRecipients()" style="border:1.5px solid var(--border);background:var(--blue);color:#fff;border-radius:6px;padding:7px 12px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">↺ 재로드</button>
+        </div>
+        <div style="font-size:10px;color:var(--hint);margin-top:4px">SharePoint List → HTTP 트리거 GET Flow · 응답: [{사업장, 업무, 수신자이메일}]</div>
+      </div>
+      <div class="cfg-f"><label>🔍 직원조회 Flow URL</label><input type="url" id="cfgLookup" value="https://defaultb9501effd05e4bf18a87898d83f46c.eb.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/238e8facb604477b9ecc956296833338/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=m5iEPHta3JBe7KHHi-hJbare8TY5aqqydEsYr2ZmyMc" placeholder="https://prod-xx.logic.azure.com/..."/></div>
+      <div class="cfg-f"><label>🟦 신규등록 제출 Flow URL</label><input type="url" id="cfgNew" placeholder="https://prod-xx.logic.azure.com/..."/></div>
+      <div class="cfg-f"><label>🟥 삭제요청 제출 Flow URL</label><input type="url" id="cfgDel" placeholder="https://prod-xx.logic.azure.com/..."/></div>
+    </div>
+  </div>
+
+  <!-- ★ 사업장 / 업무 선택 (공통) -->
+  <div class="site-selector">
+    <div class="site-selector-title">📍 사업장 &amp; 업무 선택</div>
+
+    <div class="sel-label">
+      <span>사업장</span>
+      <span class="sel-tag" id="selSiteLabel" style="display:none"></span>
+    </div>
+    <div class="site-row" id="siteRow">
+      <!-- 사업장 버튼: loadRecipients() 후 renderSiteButtons()가 동적 생성 -->
+      <span style="font-size:12px;color:var(--hint);padding:8px 0;">⏳ 수신자 정보 불러오는 중...</span>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="sel-label">
+        <span>업무 구분</span>
+        <span class="sel-tag" id="selWorkLabel" style="display:none"></span>
+      </div>
+      <div class="work-row" id="workRow">
+        <span style="font-size:12px;color:var(--hint);padding:8px 0;">← 사업장을 먼저 선택해주세요</span>
+      </div>
+    </div>
+
+    <!-- 수신자 미리보기 -->
+    <div class="rcpt-preview" id="rcptPreview">
+      <span class="rp-label">📧 자동 수신자:</span>
+      <div class="rp-tags" id="rcptPreviewTags"></div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab on-new" id="tabNew" onclick="switchTab('new')"><span>🪪</span><span>신규 등록</span><span class="tbadge">NEW</span></button>
+    <button class="tab" id="tabDel" onclick="switchTab('del')"><span>🗑️</span><span>삭제 요청</span><span class="tbadge">DEL</span></button>
+  </div>
+
+  <!-- ══ 신규등록 ══ -->
+  <div id="pNew">
+  <div class="card">
+    <div class="card-top">
+      <div class="card-top-left">
+        <div class="card-icon ci-new">🪪</div>
+        <div><div class="card-title">출입증 신규 등록 신청</div><div class="card-desc">조회 후 테이블에 추가 → 일괄 전송</div></div>
+      </div>
+      <span class="count-badge cb-new" id="cntNew">0명</span>
+    </div>
+    <div class="card-body">
+      <div class="search-row">
+        <div class="sf"><label>성명</label><input type="text" id="sn_name" placeholder="홍길동" onkeydown="if(event.key==='Enter')addRow('new')"/></div>
+        <div class="sf"><label>사번</label><input type="text" id="sn_empid" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow('new')"/></div>
+        <button class="btn-lookup bl-new" id="btnAN" onclick="addRow('new')">
+          <div class="spinner" id="spN"></div><span id="spNTxt">+ 추가</span>
+        </button>
+      </div>
+      <div class="lookup-msg" id="msgN"></div>
+
+      <div class="divider">공통 설정</div>
+      <div class="common-row cr-new">
+        <div class="c-field"><label>요청일 <span class="req">*</span></label><input type="date" id="n_date"/></div>
+        <div class="c-field"><label>출입증 구분 <span class="req">*</span></label>
+          <select id="n_card"><option value="">선택</option><option>임직원증</option><option>협력사증</option><option>방문증</option><option>기타</option></select></div>
+        <div class="c-field"><label>비고</label><input type="text" id="n_note" placeholder="특이사항(선택)"/></div>
+      </div>
+
+      <div class="divider">신청 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>성명</th><th>사번</th><th>직급</th><th>영문이름</th><th>부서</th><th>타워 No.</th><th></th></tr></thead>
+        <tbody id="tbodyNew"><tr><td colspan="8"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
+      </table></div>
+
+      <div class="divider">메일 수신자</div>
+      <div class="rcpt-box">
+        <div class="rcpt-lbl">
+          📧 수신자 목록
+          <button class="btn-rcpt-clear" onclick="clearRcpt('rcptN')">초기화</button>
+        </div>
+        <div class="rcpt-list" id="rcptN">
+          <button class="rtag-add" onclick="addRcpt('rcptN')">+ 직접 추가</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="actions-left" id="actLN">인원을 추가한 후 전송하세요</div>
+        <div class="actions-right">
+          <button class="btn-reset" onclick="resetAll('new')">전체 초기화</button>
+          <button class="btn-submit bs-new" onclick="submitForm('new')">📤 신규등록 전송</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- ══ 삭제요청 ══ -->
+  <div id="pDel" style="display:none" class="del-panel">
+  <div class="card">
+    <div class="card-top">
+      <div class="card-top-left">
+        <div class="card-icon ci-del">🗑️</div>
+        <div><div class="card-title">출입증 삭제 요청</div><div class="card-desc">조회 후 테이블에 추가 → 일괄 전송</div></div>
+      </div>
+      <span class="count-badge cb-del" id="cntDel">0명</span>
+    </div>
+    <div class="card-body">
+      <div class="search-row">
+        <div class="sf"><label>성명</label><input type="text" id="sd_name" placeholder="홍길동" onkeydown="if(event.key==='Enter')addRow('del')"/></div>
+        <div class="sf"><label>사번</label><input type="text" id="sd_empid" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow('del')"/></div>
+        <button class="btn-lookup bl-del" id="btnAD" onclick="addRow('del')">
+          <div class="spinner" id="spD"></div><span id="spDTxt">+ 추가</span>
+        </button>
+      </div>
+      <div class="lookup-msg" id="msgD"></div>
+
+      <div class="divider">공통 설정</div>
+      <div class="common-row cr-del">
+        <div class="c-field"><label>요청일 <span class="req">*</span></label><input type="date" id="d_date"/></div>
+        <div class="c-field"><label>삭제 사유 <span class="req">*</span></label>
+          <select id="d_reason"><option value="">선택</option><option>분실</option><option>퇴사</option><option>재발급(구카드 삭제)</option><option>기타</option></select></div>
+        <div class="c-field"><label>출입증 구분 <span class="req">*</span></label>
+          <select id="d_card"><option value="">선택</option><option>임직원증</option><option>협력사증</option><option>방문증</option><option>기타</option></select></div>
+        <div class="c-field"><label>비고</label><input type="text" id="d_note" placeholder="특이사항(선택)"/></div>
+      </div>
+
+      <div class="divider">삭제 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>성명</th><th>사번</th><th>직급</th><th>영문이름</th><th>부서</th><th>타워 No.</th><th></th></tr></thead>
+        <tbody id="tbodyDel"><tr><td colspan="8"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
+      </table></div>
+
+      <div class="divider">메일 수신자</div>
+      <div class="rcpt-box">
+        <div class="rcpt-lbl">
+          📧 수신자 목록
+          <button class="btn-rcpt-clear" onclick="clearRcpt('rcptD')">초기화</button>
+        </div>
+        <div class="rcpt-list" id="rcptD">
+          <button class="rtag-add" onclick="addRcpt('rcptD')">+ 직접 추가</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="actions-left" id="actLD">인원을 추가한 후 전송하세요</div>
+        <div class="actions-right">
+          <button class="btn-reset" onclick="resetAll('del')">전체 초기화</button>
+          <button class="btn-submit bs-del" onclick="submitForm('del')">📤 삭제요청 전송</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+//  ★ 사업장 / 업무별 수신자 설정
+//  실제 이메일 주소로 교체해주세요
+// ════════════════════════════════════════════
+// SITE_CONFIG: SharePoint에서 동적 로드 (이메일 노출 방지)
+let SITE_CONFIG = {};
+
+// ── 현재 선택 상태
+let curSites = new Set();
+let curWorks = new Set();
+
+// ── 데모 직원 DB
+const DEMO = [
+  {사번:'10012345',성명:'홍길동',영문이름:'HONG GIL DONG',직급:'대리',부서:'행정지원그룹',타워No:'T-042'},
+  {사번:'10023456',성명:'김영희',영문이름:'KIM YOUNG HEE',직급:'과장',부서:'재무회계그룹',타워No:'T-105'},
+  {사번:'10034567',성명:'이철수',영문이름:'LEE CHEOL SOO',직급:'사원',부서:'IT지원그룹',타워No:'T-207'},
+  {사번:'10045678',성명:'박지현',영문이름:'PARK JI HYUN',직급:'부장',부서:'인사그룹',타워No:'T-301'},
+  {사번:'10056789',성명:'최민준',영문이름:'CHOI MIN JUN',직급:'차장',부서:'전략기획그룹',타워No:'T-508'},
+];
+
+const rows = { new:[], del:[] };
+const RANKS = ['사원','대리','과장','차장','부장','수석','임원','기타'];
+
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('n_date').value = today;
+document.getElementById('d_date').value = today;
+const D = new Date();
+document.getElementById('hdate').textContent =
+  `${D.getFullYear()}.${String(D.getMonth()+1).padStart(2,'0')}.${String(D.getDate()).padStart(2,'0')} (${['일','월','화','수','목','금','토'][D.getDay()]})`;
+
+// ════ 수신자 목록 SharePoint에서 로드 ════
+// SharePoint List 컬럼: 사업장(Title), 업무, 수신자이메일
+// 행 1개 = 수신자 1명 (동일 업무에 여러 명이면 여러 행)
+async function loadRecipients() {
+  const url = document.getElementById('cfgRecipients').value.trim();
+  const siteRow = document.getElementById('siteRow');
+
+  if (!url) {
+    // Flow URL 미설정 → 로컬 fallback (개발/테스트용)
+    SITE_CONFIG = {
+      '송도': {
+        '관제':           ['sugjin0@poscowide.com'],
+        '통근버스':       ['dramakjh@poscointl.com'],
+        '9층 카페':       ['Lilka882@gmail.com', 'chjh0920@songdose.co.kr'],
+        '12층 식당/카페': ['hj2731.an@ourhome.co.kr'],
+      },
+      '센터': {
+        '식당': ['jina214.kim@samsung.com'],
+        '관제': ['jinwoo4064@poscowide.com', 'jjin6842@poscowide.com', 'dongwo3@poscowide.com'],
+      },
+      '서울역': {
+        '관제': ['zhqkddh@naver.com'],
+      },
+    };
+    renderSiteButtons();
+    return;
+  }
+
+  // 로딩 표시
+  siteRow.innerHTML = '<span style="font-size:12px;color:var(--hint);padding:8px 0;">⏳ 수신자 정보 불러오는 중...</span>';
+
+  try {
+    const res = await fetch(url, { method: 'GET' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // Flow 응답 형태: [ { 사업장, 업무, 수신자이메일 }, ... ]
+    SITE_CONFIG = {};
+    (data.value || data).forEach(item => {
+      const site  = item['사업장']?.trim();
+      const work  = item['업무']?.trim();
+      const email = item['수신자이메일']?.trim();
+      if (!site || !work || !email) return;
+      if (!SITE_CONFIG[site]) SITE_CONFIG[site] = {};
+      if (!SITE_CONFIG[site][work]) SITE_CONFIG[site][work] = [];
+      if (!SITE_CONFIG[site][work].includes(email))
+        SITE_CONFIG[site][work].push(email);
+    });
+
+    renderSiteButtons();
+    toast('✅ 수신자 정보 로드 완료', 'ok');
+  } catch(e) {
+    siteRow.innerHTML = `<span style="font-size:12px;color:var(--red);padding:8px 0;">❌ 수신자 로드 실패: ${e.message} — Flow URL을 확인해주세요.</span>`;
+    toast('❌ 수신자 정보 로드 실패', 'err');
+  }
+}
+
+function renderSiteButtons() {
+  const siteRow = document.getElementById('siteRow');
+  const sites = Object.keys(SITE_CONFIG);
+  if (!sites.length) {
+    siteRow.innerHTML = '<span style="font-size:12px;color:var(--hint);padding:8px 0;">수신자 데이터가 없습니다.</span>';
+    return;
+  }
+  const icons = { '송도':'🏢', '센터':'🏭', '서울역':'🏙️' };
+  siteRow.innerHTML = sites.map(s =>
+    `<button class="site-btn" data-site="${s}" onclick="selectSite('${s}')">${icons[s]||'📍'} ${s}</button>`
+  ).join('');
+}
+
+// ════ 사업장 선택 (멀티) ════
+function selectSite(site) {
+  // 토글
+  if (curSites.has(site)) {
+    curSites.delete(site);
+  } else {
+    curSites.add(site);
+  }
+  // 업무 선택 초기화
+  curWorks = new Set();
+
+  // 버튼 active
+  document.querySelectorAll('.site-btn').forEach(b => {
+    b.classList.toggle('active', curSites.has(b.dataset.site));
+  });
+
+  // 사업장 태그
+  const sl = document.getElementById('selSiteLabel');
+  if (curSites.size) {
+    sl.textContent = [...curSites].join(' · ');
+    sl.style.display = '';
+  } else {
+    sl.style.display = 'none';
+  }
+
+  // 선택된 사업장들의 업무 합집합 렌더
+  const allWorks = [...new Set([...curSites].flatMap(s => Object.keys(SITE_CONFIG[s] || {})))];
+  const wr = document.getElementById('workRow');
+  if (allWorks.length) {
+    wr.innerHTML = allWorks.map(w =>
+      `<button class="work-btn" data-work="${w}" onclick="selectWork('${w}')">${workIcon(w)} ${w}</button>`
+    ).join('');
+  } else {
+    wr.innerHTML = '<span style="font-size:12px;color:var(--hint);padding:8px 0;">← 사업장을 먼저 선택해주세요</span>';
+  }
+
+  // 업무 태그 · 수신자 초기화
+  document.getElementById('selWorkLabel').style.display = 'none';
+  document.getElementById('rcptPreview').className = 'rcpt-preview';
+  clearRcpt('rcptN'); clearRcpt('rcptD');
+
+  // 업무가 1개뿐이면 자동 선택
+  if (allWorks.length === 1) selectWork(allWorks[0]);
+}
+
+function workIcon(w) {
+  const icons = {'식당':'🍱','통근버스':'🚌','관제':'🎛️','비상승강기':'🛗'};
+  return icons[w] || '📋';
+}
+
+// ════ 업무 선택 ════
+function selectWork(work) {
+  // 토글
+  if (curWorks.has(work)) {
+    curWorks.delete(work);
+  } else {
+    curWorks.add(work);
+  }
+
+  // 버튼 active 상태
+  document.querySelectorAll('.work-btn').forEach(b => {
+    b.classList.toggle('active', curWorks.has(b.dataset.work));
+  });
+
+  // 선택 태그 업데이트
+  const wl = document.getElementById('selWorkLabel');
+  if (curWorks.size) {
+    wl.textContent = [...curWorks].join(' · ');
+    wl.style.display = '';
+  } else {
+    wl.style.display = 'none';
+  }
+
+  // 수신자 중복 없이 합산
+  const allEmails = [...new Set(
+    [...curWorks].flatMap(w =>
+      [...curSites].flatMap(s => SITE_CONFIG[s]?.[w] || [])
+    )
+  )];
+  applyAutoRcpt(allEmails);
+
+  // 미리보기
+  const prev = document.getElementById('rcptPreview');
+  const tags = document.getElementById('rcptPreviewTags');
+  if (allEmails.length) {
+    tags.innerHTML = allEmails.map(e => `<span class="rp-tag">${e}</span>`).join('');
+    prev.className = 'rcpt-preview show';
+  } else {
+    prev.className = 'rcpt-preview';
+  }
+
+  if (curWorks.size) {
+    toast(`📧 ${[...curWorks].join('+')} — 수신자 ${allEmails.length}명`, 'ok');
+  }
+}
+
+function applyAutoRcpt(emails) {
+  ['rcptN','rcptD'].forEach(id => {
+    clearRcpt(id);
+    const wrap = document.getElementById(id);
+    const addBtn = wrap.querySelector('.rtag-add');
+    emails.forEach(email => {
+      const tag = document.createElement('div');
+      tag.className = 'rtag auto';
+      tag.innerHTML = `<span class="rtlbl">TO</span><input type="email" value="${email}" /><button class="rtag-rm" onclick="this.parentElement.remove()" title="삭제">✕</button>`;
+      wrap.insertBefore(tag, addBtn);
+    });
+  });
+}
+
+function clearRcpt(id) {
+  const wrap = document.getElementById(id);
+  const addBtn = wrap.querySelector('.rtag-add');
+  [...wrap.querySelectorAll('.rtag')].forEach(t => t.remove());
+  if (!addBtn) {
+    const b = document.createElement('button');
+    b.className = 'rtag-add'; b.setAttribute('onclick', `addRcpt('${id}')`);
+    b.textContent = '+ 직접 추가';
+    wrap.appendChild(b);
+  }
+}
+
+function addRcpt(id) {
+  const wrap = document.getElementById(id), btn = wrap.querySelector('.rtag-add');
+  const tag = document.createElement('div'); tag.className = 'rtag';
+  tag.innerHTML = '<span class="rtlbl">TO</span><input type="email" placeholder="이메일 입력"/><button class="rtag-rm" onclick="this.parentElement.remove()">✕</button>';
+  wrap.insertBefore(tag, btn); tag.querySelector('input').focus();
+}
+
+function getRcpts(id) {
+  return [...document.querySelectorAll(`#${id} input[type=email]`)].map(i => i.value.trim()).filter(Boolean);
+}
+
+// ════ 탭 ════
+function switchTab(t) {
+  const isN = t==='new';
+  document.getElementById('pNew').style.display = isN ? '' : 'none';
+  document.getElementById('pDel').style.display = isN ? 'none' : '';
+  document.getElementById('tabNew').className = 'tab '+(isN?'on-new':'');
+  document.getElementById('tabDel').className = 'tab '+(!isN?'on-del':'');
+}
+
+// ════ 인원 추가 ════
+async function addRow(type) {
+  const isN = type==='new';
+  const name  = document.getElementById(isN?'sn_name':'sd_name').value.trim();
+  const empid = document.getElementById(isN?'sn_empid':'sd_empid').value.trim();
+  if (!name && !empid) { showMsg(type,'성명 또는 사번을 입력해주세요.','no'); return; }
+
+  const isDup = rows[type].some(r => (empid&&r.사번===empid)||(name&&empid&&r.성명===name));
+  if (isDup) { showMsg(type,'이미 추가된 인원입니다.','dup'); return; }
+
+  const btn = document.getElementById(isN?'btnAN':'btnAD');
+  const sp  = document.getElementById(isN?'spN':'spD');
+  const txt = document.getElementById(isN?'spNTxt':'spDTxt');
+  btn.disabled=true; sp.style.display='block'; txt.textContent='조회중';
+
+  const url = document.getElementById('cfgLookup').value.trim();
+  let found = null;
+  try {
+    if (url) {
+      const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({성명:name,사번:empid})});
+      if (res.ok){const d=await res.json();if(d.found&&d.employee)found=d.employee;}
+    } else {
+      await new Promise(r=>setTimeout(r,350));
+      found = DEMO.find(e=>(name&&empid)?(e.성명===name&&e.사번===empid):name?e.성명===name:e.사번===empid)||null;
+    }
+  } catch(e){console.error(e);}
+
+  btn.disabled=false; sp.style.display='none'; txt.textContent='+ 추가';
+
+  const newRow = found ? {...found} : {사번:empid||'',성명:name||'',영문이름:'',직급:'',부서:'',타워No:''};
+  rows[type].push(newRow);
+  renderTable(type);
+
+  showMsg(type, found
+    ? `✅ ${found.성명} (${found.사번}) 추가됨`
+    : `⚠️ 조회 결과 없음 — 빈 행 추가. 직접 입력해주세요.`, found?'ok':'no');
+
+  document.getElementById(isN?'sn_name':'sd_name').value='';
+  document.getElementById(isN?'sn_empid':'sd_empid').value='';
+  document.getElementById(isN?'sn_name':'sd_name').focus();
+}
+
+// ════ 테이블 렌더 ════
+function renderTable(type) {
+  const tbody = document.getElementById(type==='new'?'tbodyNew':'tbodyDel');
+  const data = rows[type];
+  const isN = type==='new';
+  document.getElementById(isN?'cntNew':'cntDel').textContent = `${data.length}명`;
+  document.getElementById(isN?'actLN':'actLD').textContent =
+    data.length ? `총 ${data.length}명 · 전송 전 내용을 확인해주세요` : '인원을 추가한 후 전송하세요';
+
+  if (!data.length) {
+    tbody.innerHTML='<tr><td colspan="8"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr>';
+    return;
+  }
+  const ro = RANKS.map(r=>`<option value="${r}">${r}</option>`).join('');
+  tbody.innerHTML = data.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td><input class="cell-input ${r.영문이름?'af':''}" value="${esc(r.성명)}" placeholder="성명" oninput="upd('${type}',${i},'성명',this.value)"/></td>
+      <td><input class="cell-input ${r.사번?'af':''}" value="${esc(r.사번)}" placeholder="사번" oninput="upd('${type}',${i},'사번',this.value)"/></td>
+      <td><select class="cell-select" onchange="upd('${type}',${i},'직급',this.value)"><option value="">-</option>${ro}</select></td>
+      <td><input class="cell-input ${r.영문이름?'af':''}" value="${esc(r.영문이름)}" placeholder="영문이름" oninput="upd('${type}',${i},'영문이름',this.value)"/></td>
+      <td><input class="cell-input ${r.부서?'af':''}" value="${esc(r.부서)}" placeholder="부서" oninput="upd('${type}',${i},'부서',this.value)"/></td>
+      <td><input class="cell-input ${r.타워No?'af':''}" value="${esc(r.타워No)}" placeholder="T-000" oninput="upd('${type}',${i},'타워No',this.value)"/></td>
+      <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
+    </tr>`).join('');
+  data.forEach((r,i)=>{
+    const sel=tbody.querySelectorAll('select')[i];
+    if(sel&&r.직급)sel.value=r.직급;
+  });
+}
+
+function upd(type,i,f,v){if(rows[type][i])rows[type][i][f]=v;}
+function delRow(type,i){rows[type].splice(i,1);renderTable(type);}
+function esc(v){return(v||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+// ════ 메시지 ════
+function showMsg(type,msg,kind){
+  const el=document.getElementById(type==='new'?'msgN':'msgD');
+  const c=kind==='ok'?'lm-ok':kind==='dup'?'lm-dup':'lm-no';
+  el.className=`lookup-msg ${c} show`; el.textContent=msg;
+  clearTimeout(el._t); el._t=setTimeout(()=>{el.className='lookup-msg';},4000);
+}
+
+// ════ 초기화 ════
+function resetAll(type){
+  const isN=type==='new', p=isN?'n':'d';
+  rows[type]=[];
+  renderTable(type);
+  ['date','card','note'].concat(isN?[]:['reason']).forEach(f=>{
+    const el=document.getElementById(`${p}_${f}`);
+    if(el)el.value=f==='date'?today:'';
+  });
+  document.getElementById(isN?'msgN':'msgD').className='lookup-msg';
+  document.getElementById(isN?'sn_name':'sd_name').value='';
+  document.getElementById(isN?'sn_empid':'sd_empid').value='';
+  toast('초기화되었습니다.','info');
+}
+
+// ════ 제출 ════
+async function submitForm(type){
+  const isN=type==='new', p=isN?'n':'d';
+  if (!curSites.size||!curWorks.size){toast('사업장과 업무를 먼저 선택해주세요.','err');return;}
+  const date=document.getElementById(`${p}_date`).value;
+  const card=document.getElementById(`${p}_card`).value;
+  const note=document.getElementById(`${p}_note`).value;
+  if(!date){toast('요청일을 입력해주세요.','err');return;}
+  if(!card){toast('출입증 구분을 선택해주세요.','err');return;}
+  if(!isN&&!document.getElementById('d_reason').value){toast('삭제 사유를 선택해주세요.','err');return;}
+  if(!rows[type].length){toast('추가된 인원이 없습니다.','err');return;}
+  const bad=rows[type].findIndex(r=>!r.성명||!r.사번);
+  if(bad>=0){toast(`${bad+1}번 행의 성명 또는 사번이 비어있습니다.`,'err');return;}
+
+  const url=document.getElementById(isN?'cfgNew':'cfgDel').value.trim();
+  const payload={
+    요청유형:isN?'신규등록':'삭제요청',
+    사업장:[...curSites].join(','), 업무구분:[...curWorks].join(','),
+    요청일:date, 출입증구분:card, 비고:note,
+    수신자목록:getRcpts(isN?'rcptN':'rcptD'),
+    인원목록:rows[type].map(r=>({성명:r.성명,사번:r.사번,직급:r.직급||'',영문이름:r.영문이름||'',부서:r.부서||'',포스코타워송도No:r.타워No||''})),
+    메일테이블HTML:buildEmailTable(type,date,card,note,isN?null:document.getElementById('d_reason').value),
+  };
+  if(!isN)payload.삭제사유=document.getElementById('d_reason').value;
+
+  if(!url){console.log('[payload]',payload);toast('⚠️ Flow URL 미설정 → 콘솔에서 payload 확인','warn');return;}
+  toast('⏳ 전송 중...','info');
+  try{
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(res.ok||res.status===202){
+      toast(`✅ [${[...curSites].join('+')}·${[...curWorks].join('+')}] ${rows[type].length}명 ${isN?'신규등록':'삭제요청'} 전송 완료`,'ok');
+      resetAll(type);
+    }else toast(`❌ 전송 실패 (${res.status})`,'err');
+  }catch(e){toast('❌ 오류: '+e.message,'err');}
+}
+
+// ════ 메일 HTML 테이블 ════
+function buildEmailTable(type,date,card,note,reason){
+  const isN=type==='new';
+  const body=rows[type].map((r,i)=>`
+    <tr style="background:${i%2?'#F4F6FA':'#fff'}">
+      <td style="text-align:center;padding:8px 10px">${i+1}</td>
+      <td style="padding:8px 10px">${r.성명||''}</td>
+      <td style="padding:8px 10px">${r.사번||''}</td>
+      <td style="padding:8px 10px">${r.직급||''}</td>
+      <td style="padding:8px 10px">${r.영문이름||''}</td>
+      <td style="padding:8px 10px">${r.부서||''}</td>
+      <td style="padding:8px 10px">${r.타워No||''}</td>
+    </tr>`).join('');
+  return `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;width:100%;max-width:700px">
+    <thead><tr style="background:#003087;color:#fff">
+      <th style="padding:10px 10px;font-weight:600">No.</th>
+      <th style="padding:10px 10px;font-weight:600">성명</th>
+      <th style="padding:10px 10px;font-weight:600">사번</th>
+      <th style="padding:10px 10px;font-weight:600">직급</th>
+      <th style="padding:10px 10px;font-weight:600">영문이름</th>
+      <th style="padding:10px 10px;font-weight:600">부서</th>
+      <th style="padding:10px 10px;font-weight:600">포스코타워-송도 No.</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr style="background:#E8EEF7">
+      <td colspan="7" style="padding:8px 10px;font-size:12px;color:#5A6480">
+        <b>${[...curSites].join('+')} · ${[...curWorks].join('+')}</b> &nbsp;|&nbsp;
+        요청유형: <b>${isN?'신규등록':'삭제요청'}</b> &nbsp;|&nbsp;
+        요청일: <b>${date}</b> &nbsp;|&nbsp;
+        출입증구분: <b>${card}</b>
+        ${reason?` &nbsp;|&nbsp; 삭제사유: <b>${reason}</b>`:''}
+        ${note?` &nbsp;|&nbsp; 비고: ${note}`:''}
+      </td>
+    </tr></tfoot>
+  </table>`;
+}
+
+function toggleCfg(){
+  document.getElementById('cfgPanel').classList.toggle('open');
+}
+
+// 페이지 로드 시 수신자 자동 로드
+window.addEventListener('DOMContentLoaded', () => { loadRecipients(); });
+function toast(msg,type='info'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className=`toast show t-${type}`;
+  clearTimeout(el._t);el._t=setTimeout(()=>el.className='toast',3200);
+}
+</script>
+</body>
+</html>
