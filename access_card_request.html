@@ -753,7 +753,7 @@ async function submitForm(type){
         사업장:site, 업무:work,
         메일제목: (() => {
           const hasVIP = rows[type].some(r=>isVIP(r.직급));
-          const base = `[출입증 ${isN?'신규등록':'삭제요청'}] ${site} · ${work} / ${date}`;
+          const base = `[포스코인터내셔널] 출입증 ${isN?'신규등록':'삭제요청'} 건 (${site} · ${work} / ${date})`;
           return hasVIP ? `🚨 [긴급] ${base}` : base;
         })(),
         수신자목록:emails, cc목록:ccs,
