@@ -663,20 +663,29 @@ async function handlePaste(e, type) {
   const uniqueEmpids = empids.filter(empid => !rows[type].some(r => r.사번 === empid));
   const dupCount = empids.length - uniqueEmpids.length;
 
-  // 병렬 조회
-  const results = await Promise.all(uniqueEmpids.map(async empid => {
-    try {
-      if (url) {
-        const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({성명:'', 사번:empid})});
-        if (res.ok) { const d=await res.json(); if(d.found&&d.employee) return {empid, found:d.employee}; }
-      }
-    } catch(err) { console.error(err); }
-    return {empid, found:null};
-  }));
+  // 3개씩 배치 처리 (동시 요청 과부하 방지)
+  const batchSize = 3;
+  const allResults = [];
+  for (let i = 0; i < uniqueEmpids.length; i += batchSize) {
+    const batch = uniqueEmpids.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(async empid => {
+      try {
+        if (url) {
+          const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({성명:'', 사번:empid})});
+          if (res.ok) { const d=await res.json(); if(d.found&&d.employee) return {empid, found:d.employee}; }
+        }
+      } catch(err) { console.error(err); }
+      return {empid, found:null};
+    }));
+    allResults.push(...batchResults);
+    // 배치 간 살짝 딜레이
+    if (i + batchSize < uniqueEmpids.length) await new Promise(r=>setTimeout(r,300));
+  }
+  const results = allResults;
 
   let success = 0, fail = 0;
   results.forEach(({empid, found}) => {
-    const nr = found ? {...found} : {출입증:'',직급:'',사번:empid,성명:'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',구분:'',비고:''};
+    const nr = found ? {...found} : {출입증:'',직급:'',사번:empid,성명:'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',구분:'',권한:'',비고:''};
     if (found) {
       nr.송도번호 = found.송도번호 || '';
       nr.센터번호 = found.센터번호 || '';
@@ -715,8 +724,15 @@ async function addRow(type) {
 
   btn.disabled=false;sp.style.display='none';txt.textContent='+ 추가';
 
-  const nr=found?{...found}:{출입증:'',직급:'',사번:empid||'',성명:name||'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',구분:'',비고:''};
+  const nr=found?{...found}:{출입증:'',직급:'',사번:empid||'',성명:name||'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',구분:'',권한:'',비고:''};
   if (found) {
+    nr.출입증 = found.출입증 || '';
+    nr.직급 = found.직급 || '';
+    nr.성명 = found.성명 || '';
+    nr.영문이름 = found.영문이름 || '';
+    nr.부문 = found.부문 || '';
+    nr.부서 = found.부서 || '';
+    nr.휴대폰 = found.휴대폰 || '';
     nr.송도번호 = found.송도번호 || '';
     nr.센터번호 = found.센터번호 || '';
     nr.센터식당번호 = found.센터식당번호 || '';
@@ -764,8 +780,10 @@ function renderTable(type) {
   if (thead) {
     if (numCol === '센터식당번호') {
       thead.innerHTML = '<tr><th>#</th><th>사번</th><th>성명</th><th>식당번호</th><th>구분</th><th>비고</th><th></th></tr>';
+    } else if (numCol === '센터번호') {
+      thead.innerHTML = '<tr><th>#</th><th>출입증</th><th>사번</th><th>성명</th><th>부서</th><th>휴대폰</th><th>권한</th><th>센터 No.</th><th>비고</th><th></th></tr>';
     } else {
-      thead.innerHTML = `<tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th class="col-num col-송도번호" style="${numCol==='송도번호'?'':'display:none'}">송도 No.</th><th class="col-num col-센터번호" style="${numCol==='센터번호'?'':'display:none'}">센터 No.</th><th class="col-num col-센터식당번호" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr>`;
+      thead.innerHTML = '<tr><th>#</th><th>출입증</th><th>사번</th><th>성명</th><th>휴대폰</th><th>송도 No.</th><th></th></tr>';
     }
   }
 
@@ -774,55 +792,73 @@ function renderTable(type) {
     tbody.innerHTML=`<tr><td colspan="${cols}"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr>`;
     return;
   }
-  const isCafeteria = numCol === '센터식당번호';
+  // ── 모드별 테이블 렌더
+  const ci = (field, val, ph) => `<input class="cell-input ${val?'af':''}" value="${esc(val||'')}" placeholder="${ph||field}" oninput="upd('${type}',${i},'${field}',this.value)"/>`;
 
-  if (isCafeteria) {
-    // ── 센터 식당 전용 테이블
+  if (numCol === '센터식당번호') {
+    // ── 센터 식당
+    // 구분: 포스코인터내셔널 고정 / 비고: 신규등록→선택, 삭제→삭제고정
+    tbody.innerHTML = data.map((r,i) => {
+      // 구분 자동 세팅
+      if (!r.구분) { r.구분 = '포스코인터내셔널'; upd(type,i,'구분','포스코인터내셔널'); }
+      if (!isN && !r.비고) { r.비고 = '삭제'; upd(type,i,'비고','삭제'); }
+      const bigoCell = isN
+        ? `<select class="cell-select" onchange="upd('${type}',${i},'비고',this.value)">
+            <option value="">비고</option>
+            <option value="신규">신규</option>
+            <option value="재등록">재등록</option>
+           </select>`
+        : `<input class="cell-input af" value="삭제" readonly style="color:var(--red);font-weight:600"/>`;
+      return `
+      <tr>
+        <td>${i+1}</td>
+        <td>${ci('사번',r.사번,'사번')}</td>
+        <td>${ci('성명',r.성명,'성명')}</td>
+        <td>${ci('센터식당번호',r.센터식당번호,'식당번호')}</td>
+        <td><input class="cell-input af" value="포스코인터내셔널" readonly style="color:var(--sub);font-weight:600"/></td>
+        <td>${bigoCell}</td>
+        <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
+      </tr>`;
+    }).join('');
+    // 비고 select 값 복원 (신규등록만)
+    if (isN) data.forEach((r,i)=>{
+      const sels=tbody.querySelectorAll('select');
+      if(sels[i]&&r.비고)sels[i].value=r.비고;
+    });
+
+  } else if (numCol === '센터번호') {
+    // ── 센터 관제
     tbody.innerHTML = data.map((r,i) => `
       <tr>
         <td>${i+1}</td>
-        <td><input class="cell-input ${r.사번?'af':''}" value="${esc(r.사번||'')}" placeholder="사번" oninput="upd('${type}',${i},'사번',this.value)"/></td>
-        <td><input class="cell-input ${r.성명?'af':''}" value="${esc(r.성명||'')}" placeholder="성명" oninput="upd('${type}',${i},'성명',this.value)"/></td>
-        <td><input class="cell-input ${r.센터식당번호?'af':''}" value="${esc(r.센터식당번호||'')}" placeholder="식당번호" oninput="upd('${type}',${i},'센터식당번호',this.value)"/></td>
-        <td><select class="cell-select" onchange="upd('${type}',${i},'구분',this.value)">
-          <option value="">구분</option>
-          <option value="등록">등록</option>
-          <option value="재등록">재등록</option>
-          <option value="삭제">삭제</option>
-        </select></td>
-        <td><input class="cell-input" value="${esc(r.비고||'')}" placeholder="비고" oninput="upd('${type}',${i},'비고',this.value)"/></td>
+        <td>${ci('출입증',r.출입증,'출입증')}</td>
+        <td>${ci('사번',r.사번,'사번')}</td>
+        <td>${ci('성명',r.성명,'성명')}</td>
+        <td>${ci('부서',r.부서,'부서')}</td>
+        <td>${ci('휴대폰',r.휴대폰,'휴대폰')}</td>
+        <td>${ci('권한',r.권한,'권한')}</td>
+        <td>${ci('센터번호',r.센터번호,'센터번호')}</td>
+        <td>${ci('비고',r.비고,'비고')}</td>
         <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
       </tr>`).join('');
-    // 구분 select 값 복원
-    data.forEach((r,i)=>{
-      const sel = tbody.querySelectorAll('select')[i];
-      if(sel && r.구분) sel.value = r.구분;
-    });
+
   } else {
-    // ── 일반 테이블
-    tbody.innerHTML=data.map((r,i)=>{
+    // ── 송도 (기본)
+    tbody.innerHTML = data.map((r,i) => {
       const vip = isN && isVIP(r.직급);
       const rowStyle = vip ? 'background:#FFF0F0;border-left:3px solid #C0392B' : '';
       return `
       <tr style="${rowStyle}">
         <td>${i+1}${vip?'<span style="color:#C0392B;font-size:10px;margin-left:2px">⚠️</span>':''}</td>
-        <td><input class="cell-input ${r.출입증?'af':''}" value="${esc(r.출입증||'')}" placeholder="출입증" oninput="upd('${type}',${i},'출입증',this.value)"/></td>
-        <td><input class="cell-input ${r.직급?'af':''}" value="${esc(r.직급||'')}" placeholder="직급" oninput="upd('${type}',${i},'직급',this.value)"/></td>
-        <td><input class="cell-input ${r.사번?'af':''}" value="${esc(r.사번||'')}" placeholder="사번" oninput="upd('${type}',${i},'사번',this.value)"/></td>
-        <td><input class="cell-input ${r.성명?'af':''}" value="${esc(r.성명||'')}" placeholder="성명" oninput="upd('${type}',${i},'성명',this.value)"/></td>
-        <td><input class="cell-input ${r.영문이름?'af':''}" value="${esc(r.영문이름||'')}" placeholder="영문이름" oninput="upd('${type}',${i},'영문이름',this.value)"/></td>
-        <td><input class="cell-input ${r.부문?'af':''}" value="${esc(r.부문||'')}" placeholder="부문" oninput="upd('${type}',${i},'부문',this.value)"/></td>
-        <td><input class="cell-input ${r.부서?'af':''}" value="${esc(r.부서||'')}" placeholder="부서" oninput="upd('${type}',${i},'부서',this.value)"/></td>
-        <td><input class="cell-input ${r.휴대폰?'af':''}" value="${esc(r.휴대폰||'')}" placeholder="휴대폰" oninput="upd('${type}',${i},'휴대폰',this.value)"/></td>
-        <td class="col-num col-송도번호" style="${numCol==='송도번호'?'':'display:none'}">${makeCellInput(type,i,'송도번호',r.송도번호)}</td>
-        <td class="col-num col-센터번호" style="${numCol==='센터번호'?'':'display:none'}">${makeCellInput(type,i,'센터번호',r.센터번호)}</td>
-        <td class="col-num col-센터식당번호" style="${numCol==='센터식당번호'?'':'display:none'}">${makeCellInput(type,i,'센터식당번호',r.센터식당번호)}</td>
-        <td><input class="cell-input" value="${esc(r.비고||'')}" placeholder="비고" oninput="upd('${type}',${i},'비고',this.value)"/></td>
+        <td>${ci('출입증',r.출입증,'출입증')}</td>
+        <td>${ci('사번',r.사번,'사번')}</td>
+        <td>${ci('성명',r.성명,'성명')}</td>
+        <td>${ci('휴대폰',r.휴대폰,'휴대폰')}</td>
+        <td>${ci('송도번호',r.송도번호,'송도번호')}</td>
         <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
       </tr>`;
     }).join('');
   }
-  updateNumCols();
 }
 
 function upd(t,i,f,v){if(rows[t][i])rows[t][i][f]=v;}
@@ -903,7 +939,7 @@ async function submitForm(type){
   const payload={
     요청유형:isN?'신규등록':'삭제요청',
     요청일:date,
-    인원목록:rows[type].map(r=>({출입증:r.출입증||'',직급:r.직급||'',사번:r.사번,성명:r.성명,영문이름:r.영문이름||'',부문:r.부문||'',부서:r.부서||'',휴대폰:r.휴대폰||'',송도번호:r.송도번호||'',센터번호:r.센터번호||'',센터식당번호:r.센터식당번호||'',비고:r.비고||''})),
+    인원목록:rows[type].map(r=>({출입증:r.출입증||'',직급:r.직급||'',사번:r.사번,성명:r.성명,부서:r.부서||'',휴대폰:r.휴대폰||'',송도번호:r.송도번호||'',센터번호:r.센터번호||'',센터식당번호:r.센터식당번호||'',구분:r.구분||'',권한:r.권한||'',비고:r.비고||''})),
     업무별발송:sitePayloads,
   };
   if(!isN)payload.삭제사유=document.getElementById('d_reason').value;
@@ -930,58 +966,68 @@ function isVIP(rank) {
 
 function buildEmailTable(type,site,work,numCol,date,note,reason){
   const isN=type==='new';
-  const nl=NUM_LABELS[numCol]||numCol;
-  const th=t=>`<th style="padding:9px 10px;font-weight:600;white-space:nowrap">${t}</th>`;
+  const th=t=>`<th style="padding:9px 10px;font-weight:600;white-space:nowrap;background:#003087;color:#fff">${t}</th>`;
+  const td=t=>`<td style="padding:8px 10px">${t||''}</td>`;
+  const p='padding:8px 10px';
 
-  // P7~P13 포함 여부 확인 (신규등록만 적용)
+  // VIP 체크 (신규만)
   const vipRows = isN ? rows[type].filter(r=>isVIP(r.직급)) : [];
   const hasVIP  = vipRows.length > 0;
-
-  // 행별 스타일 — P7~P13은 빨간 하이라이트
-  const body=rows[type].map((r,i)=>{
-    const vip = isVIP(r.직급);
-    const bg  = vip ? '#FFF0F0' : (i%2?'#F4F6FA':'#fff');
-    const rankStyle = vip
-      ? 'padding:8px 10px;font-weight:700;color:#C0392B;background:#FFE0E0'
-      : 'padding:8px 10px';
-    const marker = vip ? ' ⚠️' : '';
-    return `
-    <tr style="background:${bg}${vip?';border-left:3px solid #C0392B':''}">
-      <td style="text-align:center;padding:8px 10px">${i+1}${marker}</td>
-      <td style="padding:8px 10px">${r.출입증||''}</td>
-      <td style="${rankStyle}">${r.직급||''}</td>
-      <td style="padding:8px 10px">${r.사번||''}</td>
-      <td style="padding:8px 10px">${r.성명||''}</td>
-      <td style="padding:8px 10px">${r.영문이름||''}</td>
-      <td style="padding:8px 10px">${r.부문||''}</td>
-      <td style="padding:8px 10px">${r.부서||''}</td>
-      <td style="padding:8px 10px">${r.휴대폰||''}</td>
-      <td style="padding:8px 10px">${r[numCol]||''}</td>
-      <td style="padding:8px 10px">${r.비고||''}</td>
-    </tr>`;
-  }).join('');
-
-  // VIP 강조 배너 (P7~P13 포함 시)
   const vipBanner = hasVIP ? `
-    <tr>
-      <td colspan="11" style="padding:12px 16px;background:#C0392B;color:#fff;font-weight:700;font-size:14px;letter-spacing:0.3px">
-        🚨 [긴급] P7~P13 등급 인원 포함 — 즉시 처리 요망
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        해당 인원: ${vipRows.map(r=>`${r.성명}(${r.직급})`).join(', ')}
-      </td>
-    </tr>` : '';
+    <tr><td colspan="20" style="${p};background:#C0392B;color:#fff;font-weight:700;font-size:14px">
+      🚨 [긴급] P7~P13 등급 인원 포함 — 즉시 처리 요망 &nbsp;|&nbsp;
+      해당 인원: ${vipRows.map(r=>`${r.성명}(${r.직급})`).join(', ')}
+    </td></tr>` : '';
+
+  let header, body;
+
+  if (numCol === '센터식당번호') {
+    // 센터 식당
+    header = `<tr>${th('No.')}${th('사번')}${th('성명')}${th('식당번호')}${th('구분')}${th('비고')}</tr>`;
+    body = rows[type].map((r,i)=>{
+      const 구분val = r.구분 || '포스코인터내셔널';
+      const 비고val = isN ? (r.비고||'') : '삭제';
+      return `
+      <tr style="background:${i%2?'#F4F6FA':'#fff'}">
+        <td style="text-align:center;${p}">${i+1}</td>
+        ${td(r.사번)}${td(r.성명)}${td(r.센터식당번호)}${td(구분val)}${td(비고val)}
+      </tr>`;
+    }).join('');
+
+  } else if (numCol === '센터번호') {
+    // 센터 관제
+    header = `<tr>${th('No.')}${th('출입증')}${th('사번')}${th('성명')}${th('부서')}${th('휴대폰')}${th('권한')}${th('센터 No.')}${th('비고')}</tr>`;
+    body = rows[type].map((r,i)=>`
+      <tr style="background:${i%2?'#F4F6FA':'#fff'}">
+        <td style="text-align:center;${p}">${i+1}</td>
+        ${td(r.출입증)}${td(r.사번)}${td(r.성명)}${td(r.부서)}${td(r.휴대폰)}${td(r.권한)}${td(r.센터번호)}${td(r.비고)}
+      </tr>`).join('');
+
+  } else {
+    // 송도 (기본) — VIP 하이라이트 포함
+    header = `<tr>${th('No.')}${th('출입증')}${th('사번')}${th('성명')}${th('휴대폰')}${th('송도 No.')}</tr>`;
+    body = rows[type].map((r,i)=>{
+      const vip = isN && isVIP(r.직급);
+      const bg = vip ? '#FFF0F0' : (i%2?'#F4F6FA':'#fff');
+      const border = vip ? ';border-left:3px solid #C0392B' : '';
+      return `
+      <tr style="background:${bg}${border}">
+        <td style="text-align:center;${p}">${i+1}${vip?' ⚠️':''}</td>
+        ${td(r.출입증)}${td(r.사번)}${td(r.성명)}${td(r.휴대폰)}${td(r.송도번호)}
+      </tr>`;
+    }).join('');
+  }
+
+  const footer = `<tr style="background:#E8EEF7">
+    <td colspan="20" style="${p};font-size:12px;color:#5A6480">
+      <b>${site} · ${work}</b> &nbsp;|&nbsp; 요청유형: <b>${isN?'신규등록':'삭제요청'}</b> &nbsp;|&nbsp; 요청일: <b>${date}</b>
+      ${reason?` &nbsp;|&nbsp; 삭제사유: <b>${reason}</b>`:''}${note?` &nbsp;|&nbsp; 비고: ${note}`:''}
+    </td></tr>`;
 
   return `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;width:100%">
-    ${vipBanner}
-    <thead><tr style="background:#003087;color:#fff">${th('No.')}${th('출입증')}${th('직급')}${th('사번')}${th('성명')}${th('영문이름')}${th('부문')}${th('부서')}${th('휴대폰')}${th(nl)}${th('비고')}</tr></thead>
+    <thead>${vipBanner}${header}</thead>
     <tbody>${body}</tbody>
-    <tfoot><tr style="background:#E8EEF7">
-      <td colspan="11" style="padding:8px 10px;font-size:12px;color:#5A6480">
-        <b>${site} · ${work}</b> &nbsp;|&nbsp; 요청유형: <b>${isN?'신규등록':'삭제요청'}</b> &nbsp;|&nbsp;
-        요청일: <b>${date}</b>
-        ${reason?` &nbsp;|&nbsp; 삭제사유: <b>${reason}</b>`:''}${note?` &nbsp;|&nbsp; 비고: ${note}`:''}
-      </td>
-    </tr></tfoot>
+    <tfoot>${footer}</tfoot>
   </table>`;
 }
 
