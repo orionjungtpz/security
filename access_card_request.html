@@ -721,7 +721,7 @@ function getRcpts(id){return[...document.querySelectorAll(`#${id} input[type=ema
 function resetAll(type){
   const isN=type==='new',p=isN?'n':'d';
   rows[type]=[];renderTable(type);
-  ['date','card','note'].concat(isN?[]:['reason']).forEach(f=>{const el=document.getElementById(`${p}_${f}`);if(el)el.value=f==='date'?today:'';});
+  ['date','note'].concat(isN?[]:['reason']).forEach(f=>{const el=document.getElementById(`${p}_${f}`);if(el)el.value=f==='date'?today:'';});
   document.getElementById(isN?'msgN':'msgD').className='lookup-msg';
   document.getElementById(isN?'sn_empid':'sd_empid').value='';
   toast('초기화되었습니다.','info');
@@ -758,7 +758,7 @@ async function submitForm(type){
         })(),
         수신자목록:emails, cc목록:ccs,
         번호컬럼:numCol, 번호컬럼라벨:NUM_LABELS[numCol]||numCol,
-        메일테이블HTML:buildEmailTable(type,site,work,numCol,date,card,note,isN?null:document.getElementById('d_reason').value),
+        메일테이블HTML:buildEmailTable(type,site,work,numCol,date,note,isN?null:document.getElementById('d_reason').value),
       };
     })
   );
@@ -791,7 +791,7 @@ function isVIP(rank) {
   return false;
 }
 
-function buildEmailTable(type,site,work,numCol,date,card,note,reason){
+function buildEmailTable(type,site,work,numCol,date,note,reason){
   const isN=type==='new';
   const nl=NUM_LABELS[numCol]||numCol;
   const th=t=>`<th style="padding:9px 10px;font-weight:600;white-space:nowrap">${t}</th>`;
