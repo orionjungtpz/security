@@ -664,36 +664,35 @@ async function handlePaste(e, type) {
 
   showMsg(type, `⏳ ${empids.length}명 일괄 조회 중...`, 'no');
 
-  let success = 0, fail = 0, dup = 0;
-  for (const empid of empids) {
-    if (rows[type].some(r => r.사번 === empid)) { dup++; continue; }
+  const url = document.getElementById('cfgLookup').value.trim();
+  const uniqueEmpids = empids.filter(empid => !rows[type].some(r => r.사번 === empid));
+  const dupCount = empids.length - uniqueEmpids.length;
 
-    const url = document.getElementById('cfgLookup').value.trim();
-    let found = null;
+  // 병렬 조회
+  const results = await Promise.all(uniqueEmpids.map(async empid => {
     try {
       if (url) {
         const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({성명:'', 사번:empid})});
-        if (res.ok) { const d=await res.json(); if(d.found&&d.employee) found=d.employee; }
+        if (res.ok) { const d=await res.json(); if(d.found&&d.employee) return {empid, found:d.employee}; }
       }
     } catch(err) { console.error(err); }
+    return {empid, found:null};
+  }));
 
+  let success = 0, fail = 0;
+  results.forEach(({empid, found}) => {
     const nr = found ? {...found} : {출입증:'',직급:'',사번:empid,성명:'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',구분:'',비고:''};
     if (found) {
-      const activeSite = Object.keys(selections)[0];
-      const activeWork = activeSite ? [...(selections[activeSite]||[])][0] : null;
-      const numCol = (activeSite&&activeWork) ? (SITE_CONFIG[activeSite]?.[activeWork]?.numCol||'송도번호') : '송도번호';
-      nr.번호 = found[numCol] || '';
       nr.송도번호 = found.송도번호 || '';
       nr.센터번호 = found.센터번호 || '';
       nr.센터식당번호 = found.센터식당번호 || '';
       success++;
     } else { fail++; }
-
     rows[type].push(nr);
-  }
+  });
 
   renderTable(type);
-  const msg = `✅ ${success}명 조회 완료${dup?` / ${dup}명 중복 제외`:''}${fail?` / ${fail}명 미조회(빈 행 추가)`:''}`;
+  const msg = `✅ ${success}명 조회 완료${dupCount?` / ${dupCount}명 중복 제외`:''}${fail?` / ${fail}명 미조회(빈 행 추가)`:''}`;
   showMsg(type, msg, 'ok');
 }
 
