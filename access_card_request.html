@@ -468,7 +468,7 @@ function renderSiteGrid() {
         ${works.map(w=>{
           const wk = w.replace(/[\s\/]/g,'_');
           return `<div class="work-item" id="wi_${site}_${wk}">
-            <input type="checkbox" class="work-chk" id="wc_${site}_${wk}" disabled
+            <input type="${site==='센터'?'radio':'checkbox'}" class="work-chk" name="work_${site}" id="wc_${site}_${wk}" disabled
               onchange="toggleWork('${site}','${w}',this.checked)"/>
             <label for="wc_${site}_${wk}" class="work-lbl">${WORK_ICONS[w]||'📋'} ${w}</label>
           </div>`;
@@ -515,6 +515,17 @@ function toggleSite(site, on) {
 // ── 업무 토글
 function toggleWork(site, work, on) {
   if (!selections[site]) return;
+
+  // 센터는 단일 선택 — 기존 업무 먼저 해제
+  if (site === '센터') {
+    [...selections[site]].forEach(prevWork => {
+      const pwk = prevWork.replace(/[\s\/]/g,'_');
+      const pitem = document.getElementById(`wi_${site}_${pwk}`);
+      if(pitem) pitem.classList.remove('selected');
+    });
+    selections[site] = new Set();
+  }
+
   const wk=work.replace(/[\s\/]/g,'_');
   const item=document.getElementById(`wi_${site}_${wk}`);
   if (on) { selections[site].add(work); if(item)item.classList.add('selected'); }
