@@ -268,11 +268,10 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
       <div class="lookup-msg" id="msgN"></div>
       <div class="divider">공통 설정</div>
       <div class="common-row" style="grid-template-columns:1fr 1fr">
-        <div class="c-field"><label>요청일 <span class="req">*</span></label><input type="date" id="n_date"/></div>
       </div>
       <div class="divider">신청 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th id="thSongdoN" style="">송도 No.</th><th id="thCenterN" style="display:none">센터 No.</th><th id="thCenterFoodN" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr></thead>
+        <thead id="theadNew"><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th class="col-num col-송도번호">송도 No.</th><th class="col-num col-센터번호" style="display:none">센터 No.</th><th class="col-num col-센터식당번호" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr></thead>
         <tbody id="tbodyNew"><tr><td colspan="11"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
       </table></div>
       <div class="divider">메일 수신자</div>
@@ -315,13 +314,12 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
       <div class="lookup-msg" id="msgD"></div>
       <div class="divider">공통 설정</div>
       <div class="common-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="c-field"><label>요청일 <span class="req">*</span></label><input type="date" id="d_date"/></div>
         <div class="c-field"><label>삭제 사유 <span class="req">*</span></label>
           <select id="d_reason"><option value="">선택</option><option>분실</option><option>퇴사</option><option>재발급(구카드 삭제)</option><option>기타</option></select></div>
       </div>
       <div class="divider">삭제 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th id="thSongdoD" style="">송도 No.</th><th id="thCenterD" style="display:none">센터 No.</th><th id="thCenterFoodD" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr></thead>
+        <thead id="theadDel"><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th class="col-num col-송도번호">송도 No.</th><th class="col-num col-센터번호" style="display:none">센터 No.</th><th class="col-num col-센터식당번호" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr></thead>
         <tbody id="tbodyDel"><tr><td colspan="11"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
       </table></div>
       <div class="divider">메일 수신자</div>
@@ -510,6 +508,7 @@ function toggleSite(site, on) {
     });
   }
   updateSummary(); applyAllRcpt(); updateNumHeader();
+  renderTable('new'); renderTable('del');
 }
 
 // ── 업무 토글
@@ -531,6 +530,7 @@ function toggleWork(site, work, on) {
   if (on) { selections[site].add(work); if(item)item.classList.add('selected'); }
   else    { selections[site].delete(work); if(item)item.classList.remove('selected'); }
   updateSummary(); applyAllRcpt(); updateNumHeader(); updateNumCols();
+  renderTable('new'); renderTable('del');
 }
 
 // ── 요약 바
@@ -578,28 +578,10 @@ function updateNumCols() {
     ? (SITE_CONFIG[activeSite]?.[activeWork]?.numCol || '송도번호')
     : '송도번호';
 
-  const map = {
-    '송도번호':     ['Songdo',     'Center',    'CenterFood'],
-    '센터번호':     ['Center',     'Songdo',    'CenterFood'],
-    '센터식당번호': ['CenterFood', 'Songdo',    'Center'],
-  };
-  const [show, ...hide] = map[numCol] || ['Songdo','Center','CenterFood'];
-
-  ['N','D'].forEach(s => {
-    // 헤더
-    ['Songdo','Center','CenterFood'].forEach(k => {
-      const el = document.getElementById(`th${k}${s}`);
-      if (el) el.style.display = k === show ? '' : 'none';
-    });
-    // 셀
-    document.querySelectorAll(`[id^="tdSongdo_"][id$="${s==='N'?'new':'del'}_"]`).forEach(el => {
-      el.style.display = show === 'Songdo' ? '' : 'none';
-    });
-    document.querySelectorAll(`[id^="tdCenter_"][id$="${s==='N'?'new':'del'}_"]`).forEach(el => {
-      if (!el.id.includes('Food')) el.style.display = show === 'Center' ? '' : 'none';
-    });
-    document.querySelectorAll(`[id^="tdCenterFood_"]`).forEach(el => {
-      el.style.display = show === 'CenterFood' ? '' : 'none';
+  ['송도번호','센터번호','센터식당번호'].forEach(col => {
+    const show = col === numCol;
+    document.querySelectorAll(`.col-${col}`).forEach(el => {
+      el.style.display = show ? '' : 'none';
     });
   });
 }
@@ -691,7 +673,7 @@ async function addRow(type) {
 
   btn.disabled=false;sp.style.display='none';txt.textContent='+ 추가';
 
-  const nr=found?{...found}:{출입증:'',직급:'',사번:empid||'',성명:name||'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',비고:''};
+  const nr=found?{...found}:{출입증:'',직급:'',사번:empid||'',성명:name||'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',구분:'',비고:''};
   if (found) {
     nr.송도번호 = found.송도번호 || '';
     nr.센터번호 = found.센터번호 || '';
@@ -727,32 +709,81 @@ function renderTable(type) {
   document.getElementById(isN?'cntNew':'cntDel').textContent=`${data.length}명`;
   document.getElementById(isN?'actLN':'actLD').textContent=
     data.length?`총 ${data.length}명 · 전송 전 내용을 확인해주세요`:'인원을 추가한 후 전송하세요';
-  if(!data.length){tbody.innerHTML='<tr><td colspan="12"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr>';return;}
-  const ro=RANKS.map(r=>`<option value="${r}">${r}</option>`).join('');
 
+  // 현재 선택 사업장/업무 기반 번호컬럼
+  const _activeSite = Object.keys(selections)[0];
+  const _activeWork = _activeSite ? [...(selections[_activeSite]||[])][0] : null;
+  const numCol = (_activeSite && _activeWork)
+    ? (SITE_CONFIG[_activeSite]?.[_activeWork]?.numCol || '송도번호')
+    : '송도번호';
 
-  tbody.innerHTML=data.map((r,i)=>{
-    const vip = isN && isVIP(r.직급);
-    const rowStyle = vip ? 'background:#FFF0F0;border-left:3px solid #C0392B' : '';
-    return `
-    <tr style="${rowStyle}">
-      <td>${i+1}${vip?'<span style="color:#C0392B;font-size:10px;margin-left:2px">⚠️</span>':''}</td>
-      <td><input class="cell-input ${r.출입증?'af':''}" value="${esc(r.출입증||'')}" placeholder="출입증" oninput="upd('${type}',${i},'출입증',this.value)"/></td>
-      <td><select class="cell-select" onchange="upd('${type}',${i},'직급',this.value)"><option value="">-</option>${ro}</select></td>
-      <td><input class="cell-input ${r.사번?'af':''}" value="${esc(r.사번||'')}" placeholder="사번" oninput="upd('${type}',${i},'사번',this.value)"/></td>
-      <td><input class="cell-input ${r.성명?'af':''}" value="${esc(r.성명||'')}" placeholder="성명" oninput="upd('${type}',${i},'성명',this.value)"/></td>
-      <td><input class="cell-input ${r.영문이름?'af':''}" value="${esc(r.영문이름||'')}" placeholder="영문이름" oninput="upd('${type}',${i},'영문이름',this.value)"/></td>
-      <td><input class="cell-input ${r.부문?'af':''}" value="${esc(r.부문||'')}" placeholder="부문" oninput="upd('${type}',${i},'부문',this.value)"/></td>
-      <td><input class="cell-input ${r.부서?'af':''}" value="${esc(r.부서||'')}" placeholder="부서" oninput="upd('${type}',${i},'부서',this.value)"/></td>
-      <td><input class="cell-input ${r.휴대폰?'af':''}" value="${esc(r.휴대폰||'')}" placeholder="휴대폰" oninput="upd('${type}',${i},'휴대폰',this.value)"/></td>
-      <td id="tdSongdo_${type}_${i}" style="">${makeCellInput(type,i,'송도번호',r.송도번호)}</td>
-      <td id="tdCenter_${type}_${i}" style="display:none">${makeCellInput(type,i,'센터번호',r.센터번호)}</td>
-      <td id="tdCenterFood_${type}_${i}" style="display:none">${makeCellInput(type,i,'센터식당번호',r.센터식당번호)}</td>
-      <td><input class="cell-input" value="${esc(r.비고||'')}" placeholder="비고" oninput="upd('${type}',${i},'비고',this.value)"/></td>
-      <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
-    </tr>`;
-  }).join('');
-  data.forEach((r,i)=>{const sel=tbody.querySelectorAll('select')[i];if(sel&&r.직급)sel.value=r.직급;});
+  // 헤더 동적 업데이트 (빈 테이블이어도 항상 실행)
+  const thead = document.getElementById(isN?'theadNew':'theadDel');
+  if (thead) {
+    if (numCol === '센터식당번호') {
+      thead.innerHTML = '<tr><th>#</th><th>사번</th><th>성명</th><th>식당번호</th><th>구분</th><th>비고</th><th></th></tr>';
+    } else {
+      thead.innerHTML = `<tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th class="col-num col-송도번호" style="${numCol==='송도번호'?'':'display:none'}">송도 No.</th><th class="col-num col-센터번호" style="${numCol==='센터번호'?'':'display:none'}">센터 No.</th><th class="col-num col-센터식당번호" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr>`;
+    }
+  }
+
+  if(!data.length){
+    const cols = numCol === '센터식당번호' ? 7 : 12;
+    tbody.innerHTML=`<tr><td colspan="${cols}"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr>`;
+    return;
+  }
+    } else {
+      thead.innerHTML = `<tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th class="col-num col-송도번호" style="${numCol==='송도번호'?'':'display:none'}">송도 No.</th><th class="col-num col-센터번호" style="${numCol==='센터번호'?'':'display:none'}">센터 No.</th><th class="col-num col-센터식당번호" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr>`;
+    }
+  }
+  const isCafeteria = numCol === '센터식당번호';
+
+  if (isCafeteria) {
+    // ── 센터 식당 전용 테이블
+    tbody.innerHTML = data.map((r,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td><input class="cell-input ${r.사번?'af':''}" value="${esc(r.사번||'')}" placeholder="사번" oninput="upd('${type}',${i},'사번',this.value)"/></td>
+        <td><input class="cell-input ${r.성명?'af':''}" value="${esc(r.성명||'')}" placeholder="성명" oninput="upd('${type}',${i},'성명',this.value)"/></td>
+        <td><input class="cell-input ${r.센터식당번호?'af':''}" value="${esc(r.센터식당번호||'')}" placeholder="식당번호" oninput="upd('${type}',${i},'센터식당번호',this.value)"/></td>
+        <td><select class="cell-select" onchange="upd('${type}',${i},'구분',this.value)">
+          <option value="">구분</option>
+          <option value="등록">등록</option>
+          <option value="재등록">재등록</option>
+          <option value="삭제">삭제</option>
+        </select></td>
+        <td><input class="cell-input" value="${esc(r.비고||'')}" placeholder="비고" oninput="upd('${type}',${i},'비고',this.value)"/></td>
+        <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
+      </tr>`).join('');
+    // 구분 select 값 복원
+    data.forEach((r,i)=>{
+      const sel = tbody.querySelectorAll('select')[i];
+      if(sel && r.구분) sel.value = r.구분;
+    });
+  } else {
+    // ── 일반 테이블
+    tbody.innerHTML=data.map((r,i)=>{
+      const vip = isN && isVIP(r.직급);
+      const rowStyle = vip ? 'background:#FFF0F0;border-left:3px solid #C0392B' : '';
+      return `
+      <tr style="${rowStyle}">
+        <td>${i+1}${vip?'<span style="color:#C0392B;font-size:10px;margin-left:2px">⚠️</span>':''}</td>
+        <td><input class="cell-input ${r.출입증?'af':''}" value="${esc(r.출입증||'')}" placeholder="출입증" oninput="upd('${type}',${i},'출입증',this.value)"/></td>
+        <td><input class="cell-input ${r.직급?'af':''}" value="${esc(r.직급||'')}" placeholder="직급" oninput="upd('${type}',${i},'직급',this.value)"/></td>
+        <td><input class="cell-input ${r.사번?'af':''}" value="${esc(r.사번||'')}" placeholder="사번" oninput="upd('${type}',${i},'사번',this.value)"/></td>
+        <td><input class="cell-input ${r.성명?'af':''}" value="${esc(r.성명||'')}" placeholder="성명" oninput="upd('${type}',${i},'성명',this.value)"/></td>
+        <td><input class="cell-input ${r.영문이름?'af':''}" value="${esc(r.영문이름||'')}" placeholder="영문이름" oninput="upd('${type}',${i},'영문이름',this.value)"/></td>
+        <td><input class="cell-input ${r.부문?'af':''}" value="${esc(r.부문||'')}" placeholder="부문" oninput="upd('${type}',${i},'부문',this.value)"/></td>
+        <td><input class="cell-input ${r.부서?'af':''}" value="${esc(r.부서||'')}" placeholder="부서" oninput="upd('${type}',${i},'부서',this.value)"/></td>
+        <td><input class="cell-input ${r.휴대폰?'af':''}" value="${esc(r.휴대폰||'')}" placeholder="휴대폰" oninput="upd('${type}',${i},'휴대폰',this.value)"/></td>
+        <td class="col-num col-송도번호" style="${numCol==='송도번호'?'':'display:none'}">${makeCellInput(type,i,'송도번호',r.송도번호)}</td>
+        <td class="col-num col-센터번호" style="${numCol==='센터번호'?'':'display:none'}">${makeCellInput(type,i,'센터번호',r.센터번호)}</td>
+        <td class="col-num col-센터식당번호" style="${numCol==='센터식당번호'?'':'display:none'}">${makeCellInput(type,i,'센터식당번호',r.센터식당번호)}</td>
+        <td><input class="cell-input" value="${esc(r.비고||'')}" placeholder="비고" oninput="upd('${type}',${i},'비고',this.value)"/></td>
+        <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
   updateNumCols();
 }
 
@@ -790,7 +821,7 @@ function getRcpts(id){
 function resetAll(type){
   const isN=type==='new',p=isN?'n':'d';
   rows[type]=[];renderTable(type);
-  ['date','note'].concat(isN?[]:['reason']).forEach(f=>{const el=document.getElementById(`${p}_${f}`);if(el)el.value=f==='date'?today:'';});
+  ['note'].concat(isN?[]:['reason']).forEach(f=>{const el=document.getElementById(`${p}_${f}`);if(el)el.value='';});
   document.getElementById(isN?'msgN':'msgD').className='lookup-msg';
   document.getElementById(isN?'sn_empid':'sd_empid').value='';
   toast('초기화되었습니다.','info');
@@ -801,9 +832,8 @@ async function submitForm(type){
   const isN=type==='new',p=isN?'n':'d';
   const active=Object.keys(selections);
   if(!active.length){toast('사업장과 업무를 먼저 선택해주세요.','err');return;}
-  const date=document.getElementById(`${p}_date`).value;
+  const date=new Date().toISOString().split('T')[0]; // 발송일 자동
   const note='';
-  if(!date){toast('요청일을 입력해주세요.','err');return;}
   if(!isN&&!document.getElementById('d_reason').value){toast('삭제 사유를 선택해주세요.','err');return;}
   if(!rows[type].length){toast('추가된 인원이 없습니다.','err');return;}
   const bad=rows[type].findIndex(r=>!r.성명||!r.사번);
