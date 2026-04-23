@@ -610,6 +610,20 @@ function addRcpt(id) {
   wrap.insertBefore(tag, btn); tag.querySelector('input').focus();
 }
 
+function clearRcpt(id) {
+  const wrap = document.getElementById(id);
+  if (!wrap) return;
+  const addBtn = wrap.querySelector('.rtag-add');
+  [...wrap.querySelectorAll('.rtag')].forEach(t => t.remove());
+  if (!addBtn) {
+    const b = document.createElement('button');
+    b.className = 'rtag-add';
+    b.setAttribute('onclick', `addRcpt('${id}')`);
+    b.textContent = '+ 직접 추가';
+    wrap.appendChild(b);
+  }
+}
+
 function getRcpts(id) {
   return [...document.querySelectorAll(`#${id} input[type=email]`)].map(i => i.value.trim()).filter(Boolean);
 }
