@@ -272,7 +272,7 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
       </div>
       <div class="divider">신청 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th id="thNumNew">No.</th><th>비고</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th id="thSongdoN" style="">송도 No.</th><th id="thCenterN" style="display:none">센터 No.</th><th id="thCenterFoodN" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr></thead>
         <tbody id="tbodyNew"><tr><td colspan="11"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
       </table></div>
       <div class="divider">메일 수신자</div>
@@ -321,7 +321,7 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
       </div>
       <div class="divider">삭제 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th id="thNumDel">No.</th><th>비고</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th id="thSongdoD" style="">송도 No.</th><th id="thCenterD" style="display:none">센터 No.</th><th id="thCenterFoodD" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr></thead>
         <tbody id="tbodyDel"><tr><td colspan="11"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
       </table></div>
       <div class="divider">메일 수신자</div>
@@ -530,7 +530,7 @@ function toggleWork(site, work, on) {
   const item=document.getElementById(`wi_${site}_${wk}`);
   if (on) { selections[site].add(work); if(item)item.classList.add('selected'); }
   else    { selections[site].delete(work); if(item)item.classList.remove('selected'); }
-  updateSummary(); applyAllRcpt(); updateNumHeader();
+  updateSummary(); applyAllRcpt(); updateNumHeader(); updateNumCols();
 }
 
 // ── 요약 바
@@ -561,18 +561,46 @@ function updateSummary() {
 }
 
 // ── 테이블 번호 헤더 동적 업데이트
-function updateNumHeader() {
-  const active = Object.keys(selections);
-  const numCols = [...new Set(
-    active.flatMap(s => [...(selections[s]||[])].map(w => SITE_CONFIG[s]?.[w]?.numCol || '송도번호'))
-  )];
-  // 선택된 번호컬럼 종류 모두 표시 (예: 송도 No. / 센터 No.)
-  const label = numCols.length === 0 ? 'No.'
-    : numCols.length === 1 ? (NUM_LABELS[numCols[0]] || numCols[0])
-    : numCols.map(c => NUM_LABELS[c]||c).join(' / ');
-  ['thNumNew','thNumDel'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = label;
+function updateNumHeader() {} // 카드번호로 통합
+
+// 번호 셀 인풋 생성
+function makeCellInput(type, i, field, val) {
+  const v = (val||'').replace(/"/g,'&quot;');
+  const af = val ? 'af' : '';
+  return `<input class="cell-input ${af}" value="${v}" placeholder="${field}" oninput="upd('${type}',${i},'${field}',this.value)"/>`;
+}
+
+// 선택 사업장/업무에 따라 번호 컬럼 show/hide
+function updateNumCols() {
+  const activeSite = Object.keys(selections)[0];
+  const activeWork = activeSite ? [...(selections[activeSite]||[])][0] : null;
+  const numCol = (activeSite && activeWork)
+    ? (SITE_CONFIG[activeSite]?.[activeWork]?.numCol || '송도번호')
+    : '송도번호';
+
+  const map = {
+    '송도번호':     ['Songdo',     'Center',    'CenterFood'],
+    '센터번호':     ['Center',     'Songdo',    'CenterFood'],
+    '센터식당번호': ['CenterFood', 'Songdo',    'Center'],
+  };
+  const [show, ...hide] = map[numCol] || ['Songdo','Center','CenterFood'];
+
+  ['N','D'].forEach(s => {
+    // 헤더
+    ['Songdo','Center','CenterFood'].forEach(k => {
+      const el = document.getElementById(`th${k}${s}`);
+      if (el) el.style.display = k === show ? '' : 'none';
+    });
+    // 셀
+    document.querySelectorAll(`[id^="tdSongdo_"][id$="${s==='N'?'new':'del'}_"]`).forEach(el => {
+      el.style.display = show === 'Songdo' ? '' : 'none';
+    });
+    document.querySelectorAll(`[id^="tdCenter_"][id$="${s==='N'?'new':'del'}_"]`).forEach(el => {
+      if (!el.id.includes('Food')) el.style.display = show === 'Center' ? '' : 'none';
+    });
+    document.querySelectorAll(`[id^="tdCenterFood_"]`).forEach(el => {
+      el.style.display = show === 'CenterFood' ? '' : 'none';
+    });
   });
 }
 function getSiteEmails(site) {
@@ -663,7 +691,12 @@ async function addRow(type) {
 
   btn.disabled=false;sp.style.display='none';txt.textContent='+ 추가';
 
-  const nr=found?{...found}:{출입증:'',직급:'',사번:empid||'',성명:name||'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',서울역번호:'',센터식당번호:'',비고:''};
+  const nr=found?{...found}:{출입증:'',직급:'',사번:empid||'',성명:name||'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',비고:''};
+  if (found) {
+    nr.송도번호 = found.송도번호 || '';
+    nr.센터번호 = found.센터번호 || '';
+    nr.센터식당번호 = found.센터식당번호 || '';
+  }
   rows[type].push(nr);
   renderTable(type);
 
@@ -697,12 +730,7 @@ function renderTable(type) {
   if(!data.length){tbody.innerHTML='<tr><td colspan="12"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr>';return;}
   const ro=RANKS.map(r=>`<option value="${r}">${r}</option>`).join('');
 
-  // 현재 선택된 사업장/업무 기반으로 번호컬럼 결정
-  const activeSite = Object.keys(selections)[0];
-  const activeWork = activeSite ? [...(selections[activeSite]||[])][0] : null;
-  const numCol = (activeSite && activeWork)
-    ? (SITE_CONFIG[activeSite]?.[activeWork]?.numCol || '송도번호')
-    : '송도번호';
+
   tbody.innerHTML=data.map((r,i)=>{
     const vip = isN && isVIP(r.직급);
     const rowStyle = vip ? 'background:#FFF0F0;border-left:3px solid #C0392B' : '';
@@ -717,12 +745,15 @@ function renderTable(type) {
       <td><input class="cell-input ${r.부문?'af':''}" value="${esc(r.부문||'')}" placeholder="부문" oninput="upd('${type}',${i},'부문',this.value)"/></td>
       <td><input class="cell-input ${r.부서?'af':''}" value="${esc(r.부서||'')}" placeholder="부서" oninput="upd('${type}',${i},'부서',this.value)"/></td>
       <td><input class="cell-input ${r.휴대폰?'af':''}" value="${esc(r.휴대폰||'')}" placeholder="휴대폰" oninput="upd('${type}',${i},'휴대폰',this.value)"/></td>
-      <td><input class="cell-input ${r[numCol]?'af':''}" value="${esc(r[numCol]||'')}" placeholder="No." oninput="upd('${type}',${i},'${numCol}',this.value)"/></td>
+      <td id="tdSongdo_${type}_${i}" style="">${makeCellInput(type,i,'송도번호',r.송도번호)}</td>
+      <td id="tdCenter_${type}_${i}" style="display:none">${makeCellInput(type,i,'센터번호',r.센터번호)}</td>
+      <td id="tdCenterFood_${type}_${i}" style="display:none">${makeCellInput(type,i,'센터식당번호',r.센터식당번호)}</td>
       <td><input class="cell-input" value="${esc(r.비고||'')}" placeholder="비고" oninput="upd('${type}',${i},'비고',this.value)"/></td>
       <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
     </tr>`;
   }).join('');
   data.forEach((r,i)=>{const sel=tbody.querySelectorAll('select')[i];if(sel&&r.직급)sel.value=r.직급;});
+  updateNumCols();
 }
 
 function upd(t,i,f,v){if(rows[t][i])rows[t][i][f]=v;}
@@ -804,7 +835,7 @@ async function submitForm(type){
   const payload={
     요청유형:isN?'신규등록':'삭제요청',
     요청일:date,
-    인원목록:rows[type].map(r=>({출입증:r.출입증||'',직급:r.직급||'',사번:r.사번,성명:r.성명,영문이름:r.영문이름||'',부문:r.부문||'',부서:r.부서||'',휴대폰:r.휴대폰||'',송도번호:r.송도번호||'',센터번호:r.센터번호||'',서울역번호:r.서울역번호||'',센터식당번호:r.센터식당번호||'',비고:r.비고||''})),
+    인원목록:rows[type].map(r=>({출입증:r.출입증||'',직급:r.직급||'',사번:r.사번,성명:r.성명,영문이름:r.영문이름||'',부문:r.부문||'',부서:r.부서||'',휴대폰:r.휴대폰||'',송도번호:r.송도번호||'',센터번호:r.센터번호||'',센터식당번호:r.센터식당번호||'',비고:r.비고||''})),
     업무별발송:sitePayloads,
   };
   if(!isN)payload.삭제사유=document.getElementById('d_reason').value;
