@@ -266,9 +266,6 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
         </button>
       </div>
       <div class="lookup-msg" id="msgN"></div>
-      <div class="divider">공통 설정</div>
-      <div class="common-row" style="grid-template-columns:1fr 1fr">
-      </div>
       <div class="divider">신청 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
         <thead id="theadNew"><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th class="col-num col-송도번호">송도 No.</th><th class="col-num col-센터번호" style="display:none">센터 No.</th><th class="col-num col-센터식당번호" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr></thead>
@@ -312,10 +309,8 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
         </button>
       </div>
       <div class="lookup-msg" id="msgD"></div>
-      <div class="divider">공통 설정</div>
-      <div class="common-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="c-field"><label>삭제 사유 <span class="req">*</span></label>
-          <select id="d_reason"><option value="">선택</option><option>분실</option><option>퇴사</option><option>재발급(구카드 삭제)</option><option>기타</option></select></div>
+      <div style="margin-bottom:14px"><label style="font-size:11px;font-weight:600;color:var(--sub);display:block;margin-bottom:5px">삭제 사유 <span style="color:#E53935">*</span></label>
+        <select id="d_reason" style="border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13.5px;background:#FAFBFD;outline:none;-webkit-appearance:none;width:200px"><option value="">선택</option><option>분실</option><option>퇴사</option><option>재발급(구카드 삭제)</option><option>기타</option></select>
       </div>
       <div class="divider">삭제 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
