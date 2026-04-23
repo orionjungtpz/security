@@ -97,7 +97,7 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
 .cb-del{background:var(--red-light);color:var(--red);}
 
 /* Search */
-.search-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:13px 16px;margin-bottom:12px;}
+.search-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:13px 16px;margin-bottom:12px;}
 .sf label{font-size:11px;font-weight:600;color:var(--sub);display:block;margin-bottom:5px;}
 .sf input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13.5px;background:#fff;outline:none;transition:border-color .2s,box-shadow .2s;}
 .sf input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,81,162,.1);}
@@ -107,6 +107,8 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
 .bl-del{background:var(--red);color:#fff;} .bl-del:hover{background:#A93226;transform:translateY(-1px);}
 .btn-lookup:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
 .lookup-msg{font-size:12px;padding:6px 12px;border-radius:6px;margin-bottom:12px;display:none;}
+.name-preview{font-size:12px;color:var(--blue);font-weight:600;padding:5px 0 0 2px;display:none;}
+.del-panel .name-preview{color:var(--red);}
 .lookup-msg.show{display:block;}
 .lm-ok{background:var(--green-light);color:var(--green);border:1px solid #C8E6D3;}
 .lm-no{background:#FFF8E1;color:#B8860B;border:1px solid #FFE08A;}
@@ -254,8 +256,11 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
     </div>
     <div class="card-body">
       <div class="search-row">
-        <div class="sf"><label>성명</label><input type="text" id="sn_name" placeholder="홍길동" onkeydown="if(event.key==='Enter')addRow('new')"/></div>
-        <div class="sf"><label>사번</label><input type="text" id="sn_empid" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow('new')"/></div>
+        <div class="sf">
+          <label>사번</label>
+          <input type="text" id="sn_empid" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow('new')" style="max-width:220px"/>
+          <div class="name-preview" id="npN"></div>
+        </div>
         <button class="btn-lookup bl-new" id="btnAN" onclick="addRow('new')">
           <div class="spinner" id="spN"></div><span id="spNTxt">+ 추가</span>
         </button>
@@ -299,8 +304,11 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
     </div>
     <div class="card-body">
       <div class="search-row">
-        <div class="sf"><label>성명</label><input type="text" id="sd_name" placeholder="홍길동" onkeydown="if(event.key==='Enter')addRow('del')"/></div>
-        <div class="sf"><label>사번</label><input type="text" id="sd_empid" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow('del')"/></div>
+        <div class="sf">
+          <label>사번</label>
+          <input type="text" id="sd_empid" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow('del')" style="max-width:220px"/>
+          <div class="name-preview" id="npD"></div>
+        </div>
         <button class="btn-lookup bl-del" id="btnAD" onclick="addRow('del')">
           <div class="spinner" id="spD"></div><span id="spDTxt">+ 추가</span>
         </button>
@@ -608,10 +616,10 @@ function getSiteNumCol(site) {
 // ── 인원 추가
 async function addRow(type) {
   const isN=type==='new';
-  const name=document.getElementById(isN?'sn_name':'sd_name').value.trim();
+  const name='';
   const empid=document.getElementById(isN?'sn_empid':'sd_empid').value.trim();
-  if(!name&&!empid){showMsg(type,'성명 또는 사번을 입력해주세요.','no');return;}
-  if(rows[type].some(r=>(empid&&r.사번===empid)||(name&&empid&&r.성명===name))){showMsg(type,'이미 추가된 인원입니다.','dup');return;}
+  if(!empid){showMsg(type,'사번을 입력해주세요.','no');return;}
+  if(rows[type].some(r=>empid&&r.사번===empid)){showMsg(type,'이미 추가된 인원입니다.','dup');return;}
 
   const btn=document.getElementById(isN?'btnAN':'btnAD');
   const sp=document.getElementById(isN?'spN':'spD');
@@ -632,10 +640,24 @@ async function addRow(type) {
   const nr=found?{...found}:{출입증:'',직급:'',사번:empid||'',성명:name||'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',서울역번호:'',센터식당번호:'',비고:''};
   rows[type].push(nr);
   renderTable(type);
+
+  // 성명 미리보기 표시
+  const np = document.getElementById(isN?'npN':'npD');
+  if (np) {
+    if (found) {
+      np.textContent = `👤 ${found.성명}`;
+      np.style.display = 'block';
+    } else {
+      np.style.display = 'none';
+    }
+  }
+
   showMsg(type,found?`✅ ${found.성명} (${found.사번}) 추가됨`:'⚠️ 조회 결과 없음 — 빈 행 추가. 직접 입력해주세요.',found?'ok':'no');
-  document.getElementById(isN?'sn_name':'sd_name').value='';
   document.getElementById(isN?'sn_empid':'sd_empid').value='';
-  document.getElementById(isN?'sn_name':'sd_name').focus();
+  document.getElementById(isN?'sn_empid':'sd_empid').focus();
+  // 성명 미리보기 초기화
+  const npClear = document.getElementById(isN?'npN':'npD');
+  if (npClear) npClear.style.display='none';
 }
 
 // ── 테이블 렌더
@@ -701,7 +723,6 @@ function resetAll(type){
   rows[type]=[];renderTable(type);
   ['date','card','note'].concat(isN?[]:['reason']).forEach(f=>{const el=document.getElementById(`${p}_${f}`);if(el)el.value=f==='date'?today:'';});
   document.getElementById(isN?'msgN':'msgD').className='lookup-msg';
-  document.getElementById(isN?'sn_name':'sd_name').value='';
   document.getElementById(isN?'sn_empid':'sd_empid').value='';
   toast('초기화되었습니다.','info');
 }
