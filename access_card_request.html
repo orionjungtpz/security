@@ -258,7 +258,7 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
       <div class="search-row">
         <div class="sf">
           <label>사번</label>
-          <input type="text" id="sn_empid" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow('new')" style="max-width:220px"/>
+          <input type="text" id="sn_empid" placeholder="사번 입력 또는 여러 셀 붙여넣기" onkeydown="if(event.key==='Enter')addRow('new')" onpaste="handlePaste(event,'new')" style="width:100%"/>
           <div class="name-preview" id="npN"></div>
         </div>
         <button class="btn-lookup bl-new" id="btnAN" onclick="addRow('new')">
@@ -304,7 +304,7 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
       <div class="search-row">
         <div class="sf">
           <label>사번</label>
-          <input type="text" id="sd_empid" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow('del')" style="max-width:220px"/>
+          <input type="text" id="sd_empid" placeholder="사번 입력 또는 여러 셀 붙여넣기" onkeydown="if(event.key==='Enter')addRow('del')" onpaste="handlePaste(event,'del')" style="width:100%"/>
           <div class="name-preview" id="npD"></div>
         </div>
         <button class="btn-lookup bl-del" id="btnAD" onclick="addRow('del')">
@@ -647,6 +647,57 @@ function getSiteNumCol(site) {
     if(col) return col;
   }
   return '송도번호';
+}
+
+// ── 다중 붙여넣기 처리
+async function handlePaste(e, type) {
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  // 탭/줄바꿈/쉼표로 구분된 사번 파싱
+  const empids = text.split(/[
+
+	,]+/).map(s=>s.trim()).filter(Boolean);
+
+  if (empids.length <= 1) return; // 1개면 일반 입력으로 처리
+
+  e.preventDefault(); // 기본 붙여넣기 막기
+
+  const isN = type === 'new';
+  const input = document.getElementById(isN?'sn_empid':'sd_empid');
+  input.value = '';
+
+  showMsg(type, `⏳ ${empids.length}명 일괄 조회 중...`, 'no');
+
+  let success = 0, fail = 0, dup = 0;
+  for (const empid of empids) {
+    if (rows[type].some(r => r.사번 === empid)) { dup++; continue; }
+
+    const url = document.getElementById('cfgLookup').value.trim();
+    let found = null;
+    try {
+      if (url) {
+        const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({성명:'', 사번:empid})});
+        if (res.ok) { const d=await res.json(); if(d.found&&d.employee) found=d.employee; }
+      }
+    } catch(err) { console.error(err); }
+
+    const nr = found ? {...found} : {출입증:'',직급:'',사번:empid,성명:'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',구분:'',비고:''};
+    if (found) {
+      const activeSite = Object.keys(selections)[0];
+      const activeWork = activeSite ? [...(selections[activeSite]||[])][0] : null;
+      const numCol = (activeSite&&activeWork) ? (SITE_CONFIG[activeSite]?.[activeWork]?.numCol||'송도번호') : '송도번호';
+      nr.번호 = found[numCol] || '';
+      nr.송도번호 = found.송도번호 || '';
+      nr.센터번호 = found.센터번호 || '';
+      nr.센터식당번호 = found.센터식당번호 || '';
+      success++;
+    } else { fail++; }
+
+    rows[type].push(nr);
+  }
+
+  renderTable(type);
+  const msg = `✅ ${success}명 조회 완료${dup?` / ${dup}명 중복 제외`:''}${fail?` / ${fail}명 미조회(빈 행 추가)`:''}`;
+  showMsg(type, msg, 'ok');
 }
 
 // ── 인원 추가
