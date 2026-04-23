@@ -657,9 +657,9 @@ async function handlePaste(e, type) {
 
 	,]+/).map(s=>s.trim()).filter(Boolean);
 
-  if (empids.length <= 1) return; // 1개면 일반 입력으로 처리
+  if (empids.length === 0) return; // 빈 값이면 무시
 
-  e.preventDefault(); // 기본 붙여넣기 막기
+  e.preventDefault();
 
   const isN = type === 'new';
   const input = document.getElementById(isN?'sn_empid':'sd_empid');
