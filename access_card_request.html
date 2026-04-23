@@ -27,7 +27,7 @@
   .wrap{max-width:1000px;margin:0 auto;padding:28px 20px;}
 
   /* ── 사업장/업무 선택 ── */
-  .site-selector{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow);}
+  .site-selector{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);border-bottom-left-radius:0;border-bottom-right-radius:0;padding:20px 24px;margin-bottom:0;box-shadow:var(--shadow);}
   .site-selector-title{font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px;}
   .site-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
   .site-btn{border:1.5px solid var(--border);background:#FAFBFD;border-radius:8px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:500;color:var(--sub);cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:6px;}
@@ -44,11 +44,18 @@
   .sel-label .sel-tag{font-size:11px;font-weight:700;background:var(--navy);color:#fff;border-radius:4px;padding:2px 8px;}
 
   /* ── 수신자 미리보기 배너 ── */
-  .rcpt-preview{background:var(--green-light);border:1px solid #C8E6D3;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:12px;color:var(--green);display:none;}
-  .rcpt-preview.show{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;}
-  .rp-label{font-weight:700;white-space:nowrap;}
-  .rp-tags{display:flex;flex-wrap:wrap;gap:5px;}
-  .rp-tag{background:#fff;border:1px solid #C8E6D3;border-radius:12px;padding:2px 10px;font-size:11px;color:var(--green);}
+  /* 선택 요약 바 */
+  .sel-summary{background:var(--navy);color:#fff;border:1.5px solid var(--navy);border-top:none;border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);padding:13px 24px;margin-bottom:20px;display:flex;align-items:center;gap:0;min-height:50px;box-shadow:var(--shadow);}
+  .sel-summary.empty{background:#F7F9FC;border-color:var(--border);justify-content:center;}
+  .ss-empty-txt{font-size:12px;color:var(--hint);}
+  .ss-step{display:flex;flex-direction:column;gap:2px;}
+  .ss-label{font-size:9px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.6px;text-transform:uppercase;}
+  .ss-val{font-size:14px;font-weight:700;}
+  .ss-val.site{color:#7EC8FF;}
+  .ss-val.work{color:#FFE07A;}
+  .ss-val.rcpt{color:rgba(255,255,255,.75);font-size:12px;font-weight:400;}
+  .ss-arrow{color:rgba(255,255,255,.25);font-size:20px;margin:0 14px;}
+  .ss-div{width:1px;background:rgba(255,255,255,.15);height:28px;margin:0 14px;}
 
   /* Tabs */
   .tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;box-shadow:var(--shadow);}
@@ -244,11 +251,11 @@
       </div>
     </div>
 
-    <!-- 수신자 미리보기 -->
-    <div class="rcpt-preview" id="rcptPreview">
-      <span class="rp-label">📧 자동 수신자:</span>
-      <div class="rp-tags" id="rcptPreviewTags"></div>
-    </div>
+  </div>
+
+  <!-- 선택 요약 바 -->
+  <div class="sel-summary empty" id="selSummary">
+    <span class="ss-empty-txt">← 사업장과 업무를 선택해주세요</span>
   </div>
 
   <!-- Tabs -->
@@ -519,8 +526,8 @@ function selectSite(site) {
   }
 
   document.getElementById('selWorkLabel').style.display = 'none';
-  document.getElementById('rcptPreview').className = 'rcpt-preview';
   clearRcpt('rcptN'); clearRcpt('rcptD');
+  updateSummary();
 }
 
 function workIcon(w) {
@@ -549,17 +556,51 @@ function selectWork(work) {
     : [];
   applyAutoRcpt(emails);
 
-  const prev = document.getElementById('rcptPreview');
-  const tags = document.getElementById('rcptPreviewTags');
-  if (emails.length) {
-    tags.innerHTML = emails.map(e => `<span class="rp-tag">${e}</span>`).join('');
-    prev.className = 'rcpt-preview show';
-    toast(`📧 ${[...curWork].join('+')} — 수신자 ${emails.length}명`, 'ok');
-  } else {
-    prev.className = 'rcpt-preview';
-  }
+  updateSummary();
+  if (emails.length) toast(`📧 ${[...curWork].join('+')} — 수신자 ${emails.length}명`, 'ok');
 }
 
+function updateSummary() {
+  const el = document.getElementById('selSummary');
+  if (!curSite && !curWork.size) {
+    el.className = 'sel-summary empty';
+    el.innerHTML = '<span class="ss-empty-txt">← 사업장과 업무를 선택해주세요</span>';
+    return;
+  }
+  el.className = 'sel-summary';
+  const works = [...curWork];
+  const emails = curSite
+    ? [...new Set(works.flatMap(w => SITE_CONFIG[curSite]?.[w] || []))]
+    : [];
+  el.innerHTML = `
+    <div class="ss-step">
+      <span class="ss-label">사업장</span>
+      <span class="ss-val site">${curSite || '—'}</span>
+    </div>
+    <span class="ss-arrow">›</span>
+    <div class="ss-step">
+      <span class="ss-label">업무</span>
+      <span class="ss-val work">${works.length ? works.join(' · ') : '—'}</span>
+    </div>
+    <div class="ss-div"></div>
+    <div class="ss-step">
+      <span class="ss-label">📧 수신자 ${emails.length}명</span>
+      <span class="ss-val rcpt">${emails.join(', ') || '—'}</span>
+    </div>`;
+}
+
+function applyAutoRcpt(emails) {
+  ['rcptN','rcptD'].forEach(id => {
+    clearRcpt(id);
+    const wrap = document.getElementById(id);
+    const addBtn = wrap.querySelector('.rtag-add');
+    emails.forEach(email => {
+      const tag = document.createElement('div');
+      tag.className = 'rtag auto';
+      tag.innerHTML = `<span class="rtlbl">TO</span><input type="email" value="${email}" /><button class="rtag-rm" onclick="this.parentElement.remove()" title="삭제">✕</button>`;
+      wrap.insertBefore(tag, addBtn);
+    });
+  });
 }
 
 function addRcpt(id) {
