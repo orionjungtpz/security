@@ -382,9 +382,9 @@
 // SITE_CONFIG: SharePoint에서 동적 로드 (이메일 노출 방지)
 let SITE_CONFIG = {};
 
-// ── 현재 선택 상태
-let curSites = new Set();
-let curWorks = new Set();
+// ── 현재 선택 상태 (단일 선택)
+let curSite = null;
+let curWork = new Set(); // 업무는 멀티
 
 // ── 데모 직원 DB
 const DEMO = [
@@ -457,8 +457,25 @@ async function loadRecipients() {
     renderSiteButtons();
     toast('✅ 수신자 정보 로드 완료', 'ok');
   } catch(e) {
-    siteRow.innerHTML = `<span style="font-size:12px;color:var(--red);padding:8px 0;">❌ 수신자 로드 실패: ${e.message} — Flow URL을 확인해주세요.</span>`;
-    toast('❌ 수신자 정보 로드 실패', 'err');
+    console.warn('수신자 Flow 호출 실패, fallback 사용:', e.message);
+    // fallback으로 자동 전환
+    SITE_CONFIG = {
+      '송도': {
+        '관제':           ['sugjin0@poscowide.com'],
+        '통근버스':       ['dramakjh@poscointl.com'],
+        '9층 카페':       ['Lilka882@gmail.com', 'chjh0920@songdose.co.kr'],
+        '12층 식당/카페': ['hj2731.an@ourhome.co.kr'],
+      },
+      '센터': {
+        '식당': ['jina214.kim@samsung.com'],
+        '관제': ['jinwoo4064@poscowide.com', 'jjin6842@poscowide.com', 'dongwo3@poscowide.com'],
+      },
+      '서울역': {
+        '관제': ['zhqkddh@naver.com'],
+      },
+    };
+    renderSiteButtons();
+    toast('⚠️ 수신자 Flow 미연결 — 기본 설정으로 동작 중', 'warn');
   }
 }
 
@@ -477,124 +494,72 @@ function renderSiteButtons() {
 
 // ════ 사업장 선택 (멀티) ════
 function selectSite(site) {
-  // 토글
-  if (curSites.has(site)) {
-    curSites.delete(site);
-  } else {
-    curSites.add(site);
-  }
-  // 업무 선택 초기화
-  curWorks = new Set();
+  // 사업장 단일 선택
+  curSite = (curSite === site) ? null : site;
+  curWork = new Set(); // 사업장 바뀌면 업무 초기화
 
-  // 버튼 active
   document.querySelectorAll('.site-btn').forEach(b => {
-    b.classList.toggle('active', curSites.has(b.dataset.site));
+    b.classList.toggle('active', b.dataset.site === curSite);
   });
 
-  // 사업장 태그
   const sl = document.getElementById('selSiteLabel');
-  if (curSites.size) {
-    sl.textContent = [...curSites].join(' · ');
-    sl.style.display = '';
-  } else {
-    sl.style.display = 'none';
-  }
+  if (curSite) { sl.textContent = curSite; sl.style.display = ''; }
+  else sl.style.display = 'none';
 
-  // 선택된 사업장들의 업무 합집합 렌더
-  const allWorks = [...new Set([...curSites].flatMap(s => Object.keys(SITE_CONFIG[s] || {})))];
+  // 해당 사업장 업무 버튼 렌더
+  const works = curSite ? Object.keys(SITE_CONFIG[curSite] || {}) : [];
   const wr = document.getElementById('workRow');
-  if (allWorks.length) {
-    wr.innerHTML = allWorks.map(w =>
+  if (works.length) {
+    wr.innerHTML = works.map(w =>
       `<button class="work-btn" data-work="${w}" onclick="selectWork('${w}')">${workIcon(w)} ${w}</button>`
     ).join('');
+    if (works.length === 1) selectWork(works[0]);
   } else {
     wr.innerHTML = '<span style="font-size:12px;color:var(--hint);padding:8px 0;">← 사업장을 먼저 선택해주세요</span>';
   }
 
-  // 업무 태그 · 수신자 초기화
   document.getElementById('selWorkLabel').style.display = 'none';
   document.getElementById('rcptPreview').className = 'rcpt-preview';
   clearRcpt('rcptN'); clearRcpt('rcptD');
-
-  // 업무가 1개뿐이면 자동 선택
-  if (allWorks.length === 1) selectWork(allWorks[0]);
 }
 
 function workIcon(w) {
-  const icons = {'식당':'🍱','통근버스':'🚌','관제':'🎛️','비상승강기':'🛗'};
+  const icons = {'식당':'🍱','통근버스':'🚌','관제':'🎛️','비상승강기':'🛗','9층 카페':'☕','12층 식당/카페':'🍽️'};
   return icons[w] || '📋';
 }
 
-// ════ 업무 선택 ════
+// ════ 업무 선택 (멀티 토글) ════
 function selectWork(work) {
-  // 토글
-  if (curWorks.has(work)) {
-    curWorks.delete(work);
-  } else {
-    curWorks.add(work);
-  }
+  if (curWork.has(work)) curWork.delete(work);
+  else curWork.add(work);
 
-  // 버튼 active 상태
+  // 버튼 active
   document.querySelectorAll('.work-btn').forEach(b => {
-    b.classList.toggle('active', curWorks.has(b.dataset.work));
+    b.classList.toggle('active', curWork.has(b.dataset.work));
   });
 
-  // 선택 태그 업데이트
+  // 업무 태그
   const wl = document.getElementById('selWorkLabel');
-  if (curWorks.size) {
-    wl.textContent = [...curWorks].join(' · ');
-    wl.style.display = '';
-  } else {
-    wl.style.display = 'none';
-  }
+  if (curWork.size) { wl.textContent = [...curWork].join(' · '); wl.style.display = ''; }
+  else wl.style.display = 'none';
 
-  // 수신자 중복 없이 합산
-  const allEmails = [...new Set(
-    [...curWorks].flatMap(w =>
-      [...curSites].flatMap(s => SITE_CONFIG[s]?.[w] || [])
-    )
-  )];
-  applyAutoRcpt(allEmails);
+  // 수신자 — 선택된 업무별 중복 제거 합산
+  const emails = curSite
+    ? [...new Set([...curWork].flatMap(w => SITE_CONFIG[curSite]?.[w] || []))]
+    : [];
+  applyAutoRcpt(emails);
 
-  // 미리보기
   const prev = document.getElementById('rcptPreview');
   const tags = document.getElementById('rcptPreviewTags');
-  if (allEmails.length) {
-    tags.innerHTML = allEmails.map(e => `<span class="rp-tag">${e}</span>`).join('');
+  if (emails.length) {
+    tags.innerHTML = emails.map(e => `<span class="rp-tag">${e}</span>`).join('');
     prev.className = 'rcpt-preview show';
+    toast(`📧 ${[...curWork].join('+')} — 수신자 ${emails.length}명`, 'ok');
   } else {
     prev.className = 'rcpt-preview';
   }
-
-  if (curWorks.size) {
-    toast(`📧 ${[...curWorks].join('+')} — 수신자 ${allEmails.length}명`, 'ok');
-  }
 }
 
-function applyAutoRcpt(emails) {
-  ['rcptN','rcptD'].forEach(id => {
-    clearRcpt(id);
-    const wrap = document.getElementById(id);
-    const addBtn = wrap.querySelector('.rtag-add');
-    emails.forEach(email => {
-      const tag = document.createElement('div');
-      tag.className = 'rtag auto';
-      tag.innerHTML = `<span class="rtlbl">TO</span><input type="email" value="${email}" /><button class="rtag-rm" onclick="this.parentElement.remove()" title="삭제">✕</button>`;
-      wrap.insertBefore(tag, addBtn);
-    });
-  });
-}
-
-function clearRcpt(id) {
-  const wrap = document.getElementById(id);
-  const addBtn = wrap.querySelector('.rtag-add');
-  [...wrap.querySelectorAll('.rtag')].forEach(t => t.remove());
-  if (!addBtn) {
-    const b = document.createElement('button');
-    b.className = 'rtag-add'; b.setAttribute('onclick', `addRcpt('${id}')`);
-    b.textContent = '+ 직접 추가';
-    wrap.appendChild(b);
-  }
 }
 
 function addRcpt(id) {
@@ -663,10 +628,8 @@ async function addRow(type) {
 // 사업장+업무 조합 → 번호 컬럼 결정
 // 엑셀 컬럼명: 송도번호, 센터번호, 서울역번호, 센터식당번호
 function getTowerColKey() {
-  const sites = [...curSites];
-  const works = [...curWorks];
-  if (sites.includes('센터') && works.includes('식당')) return '센터식당번호';
-  if (sites.includes('센터')) return '센터번호';
+  if (curSite === '센터' && curWork.has('식당')) return '센터식당번호';
+  if (curSite === '센터') return '센터번호';
   return '송도번호';
 }
 
@@ -749,7 +712,7 @@ function resetAll(type){
 // ════ 제출 ════
 async function submitForm(type){
   const isN=type==='new', p=isN?'n':'d';
-  if (!curSites.size||!curWorks.size){toast('사업장과 업무를 먼저 선택해주세요.','err');return;}
+  if (!curSite||!curWork.size){toast('사업장과 업무를 먼저 선택해주세요.','err');return;}
   const date=document.getElementById(`${p}_date`).value;
   const card=document.getElementById(`${p}_card`).value;
   const note=document.getElementById(`${p}_note`).value;
@@ -763,7 +726,7 @@ async function submitForm(type){
   const url=document.getElementById(isN?'cfgNew':'cfgDel').value.trim();
   const payload={
     요청유형:isN?'신규등록':'삭제요청',
-    사업장:[...curSites].join(','), 업무구분:[...curWorks].join(','),
+    사업장:curSite, 업무구분:[...curWork].join(','),
     요청일:date, 출입증구분:card, 비고:note,
     수신자목록:getRcpts(isN?'rcptN':'rcptD'),
     인원목록:rows[type].map(r=>{
@@ -785,7 +748,7 @@ async function submitForm(type){
   try{
     const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(res.ok||res.status===202){
-      toast(`✅ [${[...curSites].join('+')}·${[...curWorks].join('+')}] ${rows[type].length}명 ${isN?'신규등록':'삭제요청'} 전송 완료`,'ok');
+      toast(`✅ [${curSite}·${[...curWork].join('+')}] ${rows[type].length}명 ${isN?'신규등록':'삭제요청'} 전송 완료`,'ok');
       resetAll(type);
     }else toast(`❌ 전송 실패 (${res.status})`,'err');
   }catch(e){toast('❌ 오류: '+e.message,'err');}
@@ -817,7 +780,7 @@ function buildEmailTable(type,date,card,note,reason){
     <tbody>${body}</tbody>
     <tfoot><tr style="background:#E8EEF7">
       <td colspan="10" style="padding:8px 10px;font-size:12px;color:#5A6480">
-        <b>${[...curSites].join('+')} · ${[...curWorks].join('+')}</b> &nbsp;|&nbsp;
+        <b>${curSite} · ${[...curWork].join('+')}</b> &nbsp;|&nbsp;
         요청유형: <b>${isN?'신규등록':'삭제요청'}</b> &nbsp;|&nbsp;
         요청일: <b>${date}</b> &nbsp;|&nbsp;
         출입증구분: <b>${card}</b>
@@ -832,8 +795,12 @@ function toggleCfg(){
   document.getElementById('cfgPanel').classList.toggle('open');
 }
 
-// 페이지 로드 시 수신자 자동 로드
-window.addEventListener('DOMContentLoaded', () => { loadRecipients(); });
+// 페이지 로드 시 수신자 자동 로드 (이미 로드됐을 경우도 대비)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => loadRecipients());
+} else {
+  loadRecipients();
+}
 function toast(msg,type='info'){
   const el=document.getElementById('toast');
   el.textContent=msg;el.className=`toast show t-${type}`;
