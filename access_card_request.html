@@ -49,7 +49,7 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
 .site-checkbox{width:17px;height:17px;cursor:pointer;accent-color:var(--navy);flex-shrink:0;}
 .site-name{font-size:14px;font-weight:700;cursor:pointer;user-select:none;}
 .site-icon{font-size:15px;}
-.work-checks{display:flex;flex-direction:column;gap:8px;padding-left:4px;}
+.work-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;padding-left:4px;}
 .work-item{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;transition:background .12s;opacity:.4;}
 .work-item.enabled{opacity:1;cursor:pointer;}
 .work-item.enabled:hover{background:#F0F4FA;}
@@ -269,7 +269,6 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
       <div class="divider">공통 설정</div>
       <div class="common-row" style="grid-template-columns:1fr 1fr">
         <div class="c-field"><label>요청일 <span class="req">*</span></label><input type="date" id="n_date"/></div>
-        <div class="c-field"><label>비고</label><input type="text" id="n_note" placeholder="특이사항(선택)"/></div>
       </div>
       <div class="divider">신청 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
@@ -319,7 +318,6 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
         <div class="c-field"><label>요청일 <span class="req">*</span></label><input type="date" id="d_date"/></div>
         <div class="c-field"><label>삭제 사유 <span class="req">*</span></label>
           <select id="d_reason"><option value="">선택</option><option>분실</option><option>퇴사</option><option>재발급(구카드 삭제)</option><option>기타</option></select></div>
-        <div class="c-field"><label>비고</label><input type="text" id="d_note" placeholder="특이사항(선택)"/></div>
       </div>
       <div class="divider">삭제 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
       <div class="tbl-wrap"><table>
@@ -351,17 +349,17 @@ header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:ce
 // 로드 전까지는 사업장/업무 구조만 유지 (이메일 없음)
 let SITE_CONFIG = {
   '송도': {
-    '관제':           { emails:[], cc:[], numCol:'송도번호' },
-    '통근버스':       { emails:[], cc:[], numCol:'송도번호' },
-    '9층 카페':       { emails:[], cc:[], numCol:'송도번호' },
-    '9층 회의실':     { emails:[], cc:[], numCol:'송도번호' },
-    '근태':           { emails:[], cc:[], numCol:'송도번호' },
-    '12층 식당/카페': { emails:[], cc:[], numCol:'송도번호' },
-    '서울역 관제':    { emails:[], cc:[], numCol:'송도번호' },
+    '관제':           { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
+    '통근버스':       { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
+    '9층 카페':       { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
+    '9층 회의실':     { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
+    '근태':           { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
+    '12층 식당/카페': { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
+    '서울역 관제':    { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
   },
   '센터': {
-    '식당': { emails:[], cc:[], numCol:'센터식당번호' },
-    '관제': { emails:[], cc:[], numCol:'센터번호' },
+    '식당': { emails:[], cc:[], names:[], ccNames:[], numCol:'센터식당번호' },
+    '관제': { emails:[], cc:[], names:[], ccNames:[], numCol:'센터번호' },
   },
 };
 
@@ -419,14 +417,19 @@ async function loadRecipients() {
       if (!SITE_CONFIG[site]) SITE_CONFIG[site] = {};
       if (!SITE_CONFIG[site][work]) SITE_CONFIG[site][work] = {emails:[], cc:[], numCol};
       // 수신자 — 세미콜론 구분으로 여러 명 가능 (예: a@a.com;b@b.com)
+      const bizName = item['업체명']?.trim() || '';
+      const ccBizName = item['CC업체명']?.trim() || '';
       email.split(';').map(e=>e.trim()).filter(Boolean).forEach(e => {
-        if (!SITE_CONFIG[site][work].emails.includes(e))
+        if (!SITE_CONFIG[site][work].emails.includes(e)) {
           SITE_CONFIG[site][work].emails.push(e);
+          SITE_CONFIG[site][work].names.push(bizName || e);
+        }
       });
-      // CC (여러 명이면 List에 행 여러 개 or 세미콜론 구분)
       cc.split(';').map(e=>e.trim()).filter(Boolean).forEach(e => {
-        if (!SITE_CONFIG[site][work].cc.includes(e))
+        if (!SITE_CONFIG[site][work].cc.includes(e)) {
           SITE_CONFIG[site][work].cc.push(e);
+          SITE_CONFIG[site][work].ccNames.push(ccBizName || e);
+        }
       });
     });
 
@@ -575,29 +578,41 @@ function getSiteCCs(site) {
 // ── 전체 수신자 박스 업데이트
 function applyAllRcpt() {
   // 업무별로 각각 TO/CC 수집 → 전체 합산 후 중복 제거
-  const toEmails=[...new Set(
-    Object.keys(selections).flatMap(s=>
-      [...selections[s]].flatMap(w=>SITE_CONFIG[s]?.[w]?.emails||[])
-    )
-  )];
-  const ccEmails=[...new Set(
-    Object.keys(selections).flatMap(s=>
-      [...selections[s]].flatMap(w=>SITE_CONFIG[s]?.[w]?.cc||[])
-    )
-  )].filter(e=>!toEmails.includes(e));
+  // TO: {email, name} 쌍으로 수집 (중복 이메일 제거)
+  const toMap = new Map();
+  Object.keys(selections).forEach(s=>{
+    [...selections[s]].forEach(w=>{
+      const cfg=SITE_CONFIG[s]?.[w]||{};
+      (cfg.emails||[]).forEach((e,i)=>{
+        if(!toMap.has(e)) toMap.set(e, cfg.names?.[i]||e);
+      });
+    });
+  });
+  const ccMap = new Map();
+  Object.keys(selections).forEach(s=>{
+    [...selections[s]].forEach(w=>{
+      const cfg=SITE_CONFIG[s]?.[w]||{};
+      (cfg.cc||[]).forEach((e,i)=>{
+        if(!toMap.has(e)&&!ccMap.has(e)) ccMap.set(e, cfg.ccNames?.[i]||e);
+      });
+    });
+  });
+
   ['rcptN','rcptD'].forEach(id=>{
     clearRcpt(id);
     const wrap=document.getElementById(id);
     const addBtn=wrap.querySelector('.rtag-add');
-    toEmails.forEach(email=>{
+    toMap.forEach((name,email)=>{
       const tag=document.createElement('div'); tag.className='rtag auto';
-      tag.innerHTML=`<span class="rtlbl">TO</span><input type="email" value="${email}"/><button class="rtag-rm" onclick="this.parentElement.remove()">✕</button>`;
+      tag.dataset.email=email;
+      tag.innerHTML=`<span class="rtlbl">TO</span><span style="font-size:12px;font-weight:600;color:var(--blue);padding:0 4px">${name}</span><button class="rtag-rm" onclick="this.parentElement.remove()" title="${email}">✕</button>`;
       wrap.insertBefore(tag,addBtn);
     });
-    ccEmails.forEach(email=>{
+    ccMap.forEach((name,email)=>{
       const tag=document.createElement('div'); tag.className='rtag auto';
+      tag.dataset.email=email;
       tag.style.borderColor='#F0D080'; tag.style.background='#FFFBEC';
-      tag.innerHTML=`<span class="rtlbl" style="color:#B8860B;background:#FFF3C0">CC</span><input type="email" value="${email}"/><button class="rtag-rm" onclick="this.parentElement.remove()">✕</button>`;
+      tag.innerHTML=`<span class="rtlbl" style="color:#B8860B;background:#FFF3C0">CC</span><span style="font-size:12px;font-weight:600;color:#B8860B;padding:0 4px">${name}</span><button class="rtag-rm" onclick="this.parentElement.remove()" title="${email}" style="color:#B8860B">✕</button>`;
       wrap.insertBefore(tag,addBtn);
     });
   });
@@ -716,7 +731,12 @@ function clearRcpt(id){
   if(!btn){const b=document.createElement('button');b.className='rtag-add';b.setAttribute('onclick',`addRcpt('${id}')`);b.textContent='+ 직접 추가';wrap.appendChild(b);}
 }
 
-function getRcpts(id){return[...document.querySelectorAll(`#${id} input[type=email]`)].map(i=>i.value.trim()).filter(Boolean);}
+function getRcpts(id){
+  return [...document.querySelectorAll(`#${id} .rtag`)].map(t=>{
+    // 업체명 태그면 data-email, 일반 input이면 value
+    return t.dataset.email || t.querySelector('input[type=email]')?.value?.trim() || '';
+  }).filter(Boolean);
+}
 
 function resetAll(type){
   const isN=type==='new',p=isN?'n':'d';
@@ -733,7 +753,7 @@ async function submitForm(type){
   const active=Object.keys(selections);
   if(!active.length){toast('사업장과 업무를 먼저 선택해주세요.','err');return;}
   const date=document.getElementById(`${p}_date`).value;
-  const note=document.getElementById(`${p}_note`).value;
+  const note='';
   if(!date){toast('요청일을 입력해주세요.','err');return;}
   if(!isN&&!document.getElementById('d_reason').value){toast('삭제 사유를 선택해주세요.','err');return;}
   if(!rows[type].length){toast('추가된 인원이 없습니다.','err');return;}
@@ -765,7 +785,7 @@ async function submitForm(type){
 
   const payload={
     요청유형:isN?'신규등록':'삭제요청',
-    요청일:date,비고:note,
+    요청일:date,
     인원목록:rows[type].map(r=>({출입증:r.출입증||'',직급:r.직급||'',사번:r.사번,성명:r.성명,영문이름:r.영문이름||'',부문:r.부문||'',부서:r.부서||'',휴대폰:r.휴대폰||'',송도번호:r.송도번호||'',센터번호:r.센터번호||'',서울역번호:r.서울역번호||'',센터식당번호:r.센터식당번호||'',비고:r.비고||''})),
     업무별발송:sitePayloads,
   };
