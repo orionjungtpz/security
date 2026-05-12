@@ -421,6 +421,7 @@ let SITE_CONFIG = {};   // { 사업장: { 업무: [{업체명, 이메일}] } }
 let curSite = null;
 let curWork = null;
 let rows = [];          // 인원 목록
+let rawPasteRows = [];  // 엑셀 원본 데이터 (재매핑용)
 
 const RANKS = ['사원','대리','과장','차장','부장','수석','임원','기타'];
 
@@ -664,6 +665,13 @@ function selectWork(work) {
   }
   updateSelBadge();
   updateTowerHeader();
+  // rawCells 있는 행들 번호 재매핑
+  const col = getTowerCol();
+  rows.forEach(r => {
+    if (r.rawCells && col !== null) {
+      r.towerNo = r.rawCells[col] || '';
+    }
+  });
   if (rows.length > 0) renderTable();
   const header = getTowerHeader();
   toast(curWork ? `${curSite} · ${curWork} 선택 — 번호 열: ${header}` : '업무 선택 해제', 'info');
@@ -785,8 +793,10 @@ function processPasteText(text) {
     const phone   = cells[COL.PHONE]   || '';
     const note    = cells[COL.NOTE]    || '';
     const towerNo = towerCol !== null ? (cells[towerCol] || '') : '';
+    // 원본 엑셀 셀 전체 저장 (나중에 업무 변경 시 재매핑용)
+    const rawCells = [...cells];
 
-    rows.push({ empid, name, engname, rank, dept, phone, towerNo, note, card, date, type:'reg' });
+    rows.push({ empid, name, engname, rank, dept, phone, towerNo, note, card, date, type:'reg', rawCells });
     added++;
   });
 
