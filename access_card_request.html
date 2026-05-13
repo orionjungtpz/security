@@ -187,6 +187,30 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
 .spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* 사업장/업무 트리 */
+.site-tree{padding:0 8px;}
+.site-node{margin-bottom:2px;}
+.site-node-header{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;cursor:default;transition:background .12s;user-select:none;}
+.site-node-header:hover{background:#e8e7ef;}
+.site-node-toggle{background:none;border:none;cursor:pointer;padding:0;color:#747683;font-size:14px;line-height:1;width:16px;text-align:center;flex-shrink:0;transition:transform .2s;}
+.site-node-toggle.open{transform:rotate(90deg);}
+.site-chk{width:14px;height:14px;cursor:pointer;accent-color:#001d59;flex-shrink:0;}
+.site-node-label{font-size:13px;font-weight:700;color:#1a1b21;cursor:pointer;flex:1;}
+.work-tree{padding-left:28px;overflow:hidden;max-height:0;transition:max-height .25s ease;}
+.work-tree.open{max-height:500px;}
+.work-node{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;cursor:default;transition:background .12s;}
+.work-node:hover{background:#e8e7ef;}
+.work-chk2{width:13px;height:13px;cursor:pointer;accent-color:#1d5daf;flex-shrink:0;}
+.work-node-label{font-size:12px;font-weight:600;color:#444652;cursor:pointer;flex:1;}
+.work-node.checked .work-node-label{color:#001d59;}
+
+/* 선택 요약 */
+.sel-summary{margin:0 12px 14px;background:#eef4ff;border:1px solid #aac7ff;border-radius:8px;padding:10px 12px;display:none;}
+.sel-summary.show{display:block;}
+.sel-summary-title{font-size:10px;font-weight:700;color:#1d5daf;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;}
+.sel-summary-item{font-size:11px;color:#1a1b21;font-weight:600;margin-bottom:3px;}
+.sel-summary-item span{font-weight:400;color:#444652;}
+
 /* 동명이인 팝업 */
 .modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.4);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
 .modal-overlay.show{opacity:1;pointer-events:all;}
@@ -232,26 +256,21 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
     <p>행정지원그룹</p>
   </div>
 
-  <!-- 사업장 -->
+  <!-- 사업장/업무 트리 -->
   <div class="sb-section">
     <div class="sb-label">
       <span class="material-symbols-outlined">location_on</span>
-      <span class="txt">사업장</span>
+      <span class="txt">사업장 &amp; 업무</span>
     </div>
-    <div id="siteRow">
+    <div class="site-tree" id="siteTree">
       <span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">⏳ 불러오는 중...</span>
     </div>
   </div>
 
-  <!-- 업무 -->
-  <div class="sb-section">
-    <div class="sb-label">
-      <span class="material-symbols-outlined">category</span>
-      <span class="txt">업무</span>
-    </div>
-    <div id="workRow">
-      <span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">사업장을 먼저 선택하세요</span>
-    </div>
+  <!-- 선택 요약 -->
+  <div class="sel-summary" id="selSummary">
+    <div class="sel-summary-title">선택됨</div>
+    <div id="selSummaryContent"></div>
   </div>
 
   <!-- 수신자 미리보기 -->
@@ -376,7 +395,6 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
             <th>사번</th>
             <th>성명</th>
             <th>영문이름</th>
-            <th>직급</th>
             <th>부서</th>
             <th>휴대폰</th>
             <th id="thTowerNo">번호</th>
@@ -385,7 +403,7 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
           </tr>
         </thead>
         <tbody id="tbodyMain">
-          <tr><td colspan="12">
+          <tr><td colspan="11">
             <div class="tbl-empty">
               <span class="material-symbols-outlined" style="font-size:28px;display:block;margin:0 auto 8px;opacity:.35;">person_search</span>
               직원 조회 또는 엑셀 붙여넣기로 인원을 추가하세요
@@ -476,7 +494,13 @@ function getTowerColFor(site, work) {
   };
   return map[key] ?? COL.SONGDO;
 }
-function getTowerCol() { return getTowerColFor(curSite, [...selectedWorks][0]||null); }
+function getFirstSiteWork() {
+  const first = [...selectedWorks][0];
+  if (!first) return {site:null, work:null};
+  const [site, work] = first.split('||');
+  return {site, work};
+}
+function getTowerCol() { const {site,work}=getFirstSiteWork(); return getTowerColFor(site,work); }
 
 // 타워번호 열 헤더명
 function getTowerHeaderFor(site, work) {
@@ -492,7 +516,7 @@ function getTowerHeaderFor(site, work) {
   };
   return map[key] ?? '번호';
 }
-function getTowerHeader() { return getTowerHeaderFor(curSite, [...selectedWorks][0]||null); }
+function getTowerHeader() { const {site,work}=getFirstSiteWork(); return getTowerHeaderFor(site,work); }
 
 // 메일 템플릿 설정
 function getMailConfigFor(site, work) {
@@ -506,7 +530,7 @@ function getMailConfigFor(site, work) {
     phone: isYeongeun ? 'T.02-3457-4344' : 'T.02-3457-4335',
   };
 }
-function getMailConfig() { return getMailConfigFor(curSite, [...selectedWorks][0]||null); }
+function getMailConfig() { const {site,work}=getFirstSiteWork(); return getMailConfigFor(site,work); }
 
 // 메일 표 컬럼 정의
 function getMailColumnsFor(site, work) {
@@ -525,7 +549,7 @@ function getMailColumnsFor(site, work) {
   };
   return maps[key] ?? ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'];
 }
-function getMailColumns() { return getMailColumnsFor(curSite, [...selectedWorks][0]||null); }
+function getMailColumns() { const {site,work}=getFirstSiteWork(); return getMailColumnsFor(site,work); }
 
 // ── 제목 생성 ──
 function buildSubjectFor(site, work, regCount, delCount) {
@@ -694,48 +718,89 @@ async function loadRecipients() {
 }
 
 function renderSiteButtons() {
-  const el = document.getElementById('siteRow');
+  const el = document.getElementById('siteTree');
   const sites = Object.keys(SITE_CONFIG);
   if (!sites.length) { el.innerHTML='<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">데이터 없음</span>'; return; }
-  const icons = {'송도':'🏢','센터':'🏭','서울역':'🏙️','셔틀버스':'🚌'};
-  el.innerHTML = sites.map(s =>
-    `<button class="site-pill" data-site="${s}" onclick="selectSite('${s}')"><span class="s-dot"></span>${icons[s]||'📍'} ${s}</button>`
-  ).join('');
+  const icons = {'송도':'🏢','센터':'🏭','서울역':'🏙️','셔틀버스':'🚌','test':'🧪'};
+  el.innerHTML = sites.map(s => {
+    const works = Object.keys(SITE_CONFIG[s]||{});
+    const sid = `site_${s.replace(/\s/g,'_')}`;
+    return `<div class="site-node" id="node_${sid}">
+      <div class="site-node-header">
+        <button class="site-node-toggle" id="toggle_${sid}" onclick="toggleSiteOpen('${s}')">▶</button>
+        <input type="checkbox" class="site-chk" id="chk_${sid}" onclick="toggleSiteCheck('${s}', this.checked)"/>
+        <label class="site-node-label" for="toggle_${sid}" onclick="toggleSiteOpen('${s}')">${icons[s]||'📍'} ${s}</label>
+      </div>
+      <div class="work-tree" id="works_${sid}">
+        ${works.map(w => {
+          const wid = `work_${s.replace(/\s/g,'_')}_${w.replace(/[\s\/]/g,'_')}`;
+          return `<div class="work-node" id="wnode_${wid}">
+            <input type="checkbox" class="work-chk2" id="chk_${wid}" onclick="toggleWorkCheck('${s}','${w}',this.checked)"/>
+            <label class="work-node-label" for="chk_${wid}" onclick="event.preventDefault();toggleWorkCheck('${s}','${w}',!document.getElementById('chk_${wid}').checked)">${workIcon(w)} ${w}</label>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function selectSite(site) {
-  curSite = curSite === site ? null : site;
-  selectedWorks = new Set();
-  document.querySelectorAll('.site-pill').forEach(b => b.classList.toggle('active', b.dataset.site === curSite));
-  const works = curSite ? Object.keys(SITE_CONFIG[curSite]||{}) : [];
-  const wr = document.getElementById('workRow');
-  if (works.length) {
-    wr.innerHTML = `<div class="work-chk-wrap">
-      <div class="work-chk-all">
-        <input type="checkbox" id="chkAllWorks" onchange="toggleAllWorks(this.checked)"/>
-        <label for="chkAllWorks">전체 선택</label>
-      </div>
-      ${works.map(w => `
-        <div class="work-chk-item" id="wrapWork_${CSS.escape(w)}">
-          <input type="checkbox" id="chk_${CSS.escape(w)}" value="${w}" onchange="toggleWork('${w}', this.checked); document.getElementById('wrapWork_${CSS.escape(w)}').classList.toggle('checked', this.checked)"/>
-          <label for="chk_${CSS.escape(w)}">${workIcon(w)} ${w}</label>
-        </div>`).join('')}
-    </div>`;
-    // 기본 전체 선택
-    toggleAllWorks(true);
-    document.getElementById('chkAllWorks').checked = true;
-  } else {
-    wr.innerHTML = '<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">사업장을 먼저 선택하세요</span>';
+function toggleSiteOpen(site) {
+  const sid = `site_${site.replace(/\s/g,'_')}`;
+  const workTree = document.getElementById(`works_${sid}`);
+  const toggle = document.getElementById(`toggle_${sid}`);
+  if (!workTree) return;
+  const isOpen = workTree.classList.toggle('open');
+  toggle.classList.toggle('open', isOpen);
+}
+
+function toggleSiteCheck(site, checked) {
+  const works = Object.keys(SITE_CONFIG[site]||{});
+  const sid = `site_${site.replace(/\s/g,'_')}`;
+  works.forEach(w => {
+    const wid = `work_${site.replace(/\s/g,'_')}_${w.replace(/[\s\/]/g,'_')}`;
+    const cb = document.getElementById(`chk_${wid}`);
+    const wnode = document.getElementById(`wnode_${wid}`);
+    if (cb) cb.checked = checked;
+    if (wnode) wnode.classList.toggle('checked', checked);
+    if (checked) selectedWorks.add(`${site}||${w}`);
+    else selectedWorks.delete(`${site}||${w}`);
+  });
+  // 업무 목록 자동 펼치기
+  if (checked) {
+    const workTree = document.getElementById(`works_${sid}`);
+    const toggle = document.getElementById(`toggle_${sid}`);
+    if (workTree) { workTree.classList.add('open'); toggle.classList.add('open'); }
   }
-  hideRcptPreview();
+  updateRcptFromWorks();
   updateSelBadge();
+  updateSelSummary();
+}
+
+function toggleWorkCheck(site, work, checked) {
+  const wid = `work_${site.replace(/\s/g,'_')}_${work.replace(/[\s\/]/g,'_')}`;
+  const cb = document.getElementById(`chk_${wid}`);
+  const wnode = document.getElementById(`wnode_${wid}`);
+  if (cb) cb.checked = checked;
+  if (wnode) wnode.classList.toggle('checked', checked);
+  const key = `${site}||${work}`;
+  if (checked) selectedWorks.add(key);
+  else selectedWorks.delete(key);
+  // 사업장 체크박스 상태 업데이트
+  const sid = `site_${site.replace(/\s/g,'_')}`;
+  const works = Object.keys(SITE_CONFIG[site]||{});
+  const allChecked = works.every(w => selectedWorks.has(`${site}||${w}`));
+  const siteCb = document.getElementById(`chk_${sid}`);
+  if (siteCb) siteCb.checked = allChecked;
+  updateRcptFromWorks();
+  updateSelBadge();
+  updateSelSummary();
 }
 
 function toggleWork(work, checked) {
   if (checked) selectedWorks.add(work);
   else selectedWorks.delete(work);
   // 전체선택 체크박스 상태 업데이트
-  const allWorks = curSite ? Object.keys(SITE_CONFIG[curSite]||{}) : [];
+  const allWorks = site ? Object.keys(SITE_CONFIG[site]||{}) : [];
   const allChk = document.getElementById('chkAllWorks');
   if (allChk) allChk.checked = allWorks.length > 0 && allWorks.every(w => selectedWorks.has(w));
   // 수신자 업데이트 — 선택된 모든 업무 수신자 합산
@@ -745,7 +810,7 @@ function toggleWork(work, checked) {
 }
 
 function toggleAllWorks(checked) {
-  const allWorks = curSite ? Object.keys(SITE_CONFIG[curSite]||{}) : [];
+  const allWorks = site ? Object.keys(SITE_CONFIG[site]||{}) : [];
   allWorks.forEach(w => {
     if (checked) selectedWorks.add(w);
     else selectedWorks.delete(w);
@@ -757,11 +822,11 @@ function toggleAllWorks(checked) {
 }
 
 function updateRcptFromWorks() {
-  // 선택된 모든 업무의 수신자 합산 (중복 제거)
   const allRcpts = [];
   const seenEmails = new Set();
-  [...selectedWorks].forEach(w => {
-    const rcpts = SITE_CONFIG[curSite]?.[w] || [];
+  [...selectedWorks].forEach(key => {
+    const [site, work] = key.split('||');
+    const rcpts = SITE_CONFIG[site]?.[work] || [];
     rcpts.forEach(r => {
       if (!seenEmails.has(r.email)) { seenEmails.add(r.email); allRcpts.push(r); }
     });
@@ -818,13 +883,29 @@ function hideRcptPreview() {
 
 function updateSelBadge() {
   const badge = document.getElementById('selBadge');
-  if (curSite) {
-    const wStr = selectedWorks.size > 0 ? ` · ${[...selectedWorks].join(', ')}` : '';
-    badge.textContent = curSite + wStr;
+  if (selectedWorks.size > 0) {
+    badge.textContent = `${selectedWorks.size}개 업무 선택됨`;
     badge.style.display = '';
   } else {
     badge.style.display = 'none';
   }
+}
+
+function updateSelSummary() {
+  const el = document.getElementById('selSummary');
+  const content = document.getElementById('selSummaryContent');
+  if (selectedWorks.size === 0) { el.classList.remove('show'); return; }
+  // 사업장별 그룹핑
+  const grouped = {};
+  [...selectedWorks].forEach(key => {
+    const [site, work] = key.split('||');
+    if (!grouped[site]) grouped[site] = [];
+    grouped[site].push(work);
+  });
+  content.innerHTML = Object.entries(grouped).map(([site, works]) =>
+    `<div class="sel-summary-item">${site} <span>${works.join(', ')}</span></div>`
+  ).join('');
+  el.classList.add('show');
 }
 
 function updateTowerHeader() {
@@ -1061,11 +1142,11 @@ function renderTable() {
     : '인원을 추가한 후 전송하세요';
 
   if (!rows.length) {
-    tbody.innerHTML='<tr><td colspan="12"><div class="tbl-empty"><span class="material-symbols-outlined" style="font-size:28px;display:block;margin:0 auto 8px;opacity:.35;">person_search</span>직원 조회 또는 엑셀 붙여넣기로 인원을 추가하세요</div></td></tr>';
+    tbody.innerHTML='<tr><td colspan="11"><div class="tbl-empty"><span class="material-symbols-outlined" style="font-size:28px;display:block;margin:0 auto 8px;opacity:.35;">person_search</span>직원 조회 또는 엑셀 붙여넣기로 인원을 추가하세요</div></td></tr>';
     return;
   }
 
-  const ro = RANKS.map(r=>`<option value="${r}">${r}</option>`).join('');
+
   tbody.innerHTML = rows.map((r,i) => {
     const typeOpts = `<option value="reg" ${r.type==='reg'?'selected':''}>등록</option><option value="del" ${r.type==='del'?'selected':''}>삭제</option>`;
     const typeClass = r.type==='reg'?'type-reg':'type-del';
@@ -1076,7 +1157,6 @@ function renderTable() {
       <td><input class="cell-in ${r.empid?'filled':''}" value="${esc(r.empid)}" placeholder="사번" oninput="upd(${i},'empid',this.value)"/></td>
       <td><input class="cell-in ${r.name?'filled':''}" value="${esc(r.name)}" placeholder="성명" oninput="upd(${i},'name',this.value)" style="min-width:70px;"/></td>
       <td><input class="cell-in" value="${esc(r.engname)}" placeholder="영문이름" oninput="upd(${i},'engname',this.value)" style="min-width:110px;"/></td>
-      <td><select class="cell-sel" onchange="upd(${i},'rank',this.value)" style="width:70px;"><option value="">-</option>${ro}</select></td>
       <td><input class="cell-in ${r.dept?'filled':''}" value="${esc(r.dept)}" placeholder="부서" oninput="upd(${i},'dept',this.value)" style="min-width:90px;"/></td>
       <td><input class="cell-in" value="${esc(r.phone)}" placeholder="010-0000-0000" oninput="upd(${i},'phone',this.value)" style="min-width:110px;"/></td>
       <td><input class="cell-in ${r.towerNo?'filled':''}" value="${esc(r.towerNo)}" placeholder="-" oninput="upd(${i},'towerNo',this.value)" style="width:80px;"/></td>
@@ -1085,13 +1165,7 @@ function renderTable() {
     </tr>`;
   }).join('');
 
-  // 직급 select 값 반영
-  rows.forEach((r,i) => {
-    const sels = tbody.querySelectorAll('select');
-    // 각 행 2개 select (type, rank) — rank는 index*2+1
-    const rankSel = sels[i*2+1];
-    if (rankSel && r.rank) rankSel.value = r.rank;
-  });
+
 }
 
 function upd(i,f,v){ if(rows[i]) rows[i][f]=v; }
@@ -1116,8 +1190,8 @@ function getTowerNoFor(r, site, work) {
 }
 
 async function submitForm() {
-  if (!curSite) { toast('사업장을 먼저 선택해주세요.','err'); return; }
-  if (selectedWorks.size === 0) { toast('업무를 하나 이상 선택해주세요.','err'); return; }
+  if (selectedWorks.size === 0) { toast('사업장과 업무를 선택해주세요.','err'); return; }
+
   if (!rows.length) { toast('추가된 인원이 없습니다.','err'); return; }
   const bad = rows.findIndex(r => !r.name || !r.empid);
   if (bad >= 0) { toast(`${bad+1}번 행의 성명 또는 사번이 비어있습니다.`,'err'); return; }
@@ -1125,30 +1199,33 @@ async function submitForm() {
   if (!date) { toast('요청일을 입력해주세요.','err'); return; }
   const url = document.getElementById('cfgSubmit').value.trim();
 
-  const works = [...selectedWorks];
+  const works = [...selectedWorks].map(key => {
+    const [site, work] = key.split('||');
+    return {site, work};
+  });
   let successCount = 0;
 
   toast(`⏳ ${works.length}개 업무 순차 전송 중...`, 'info');
 
-  for (const work of works) {
+  for (const {site, work} of works) {
     // 해당 업무 수신자
-    const rcpts = SITE_CONFIG[curSite]?.[work] || [];
+    const rcpts = SITE_CONFIG[site]?.[work] || [];
     const toList = rcpts.map(r=>r.email).filter(Boolean);
     const ccSet = new Set();
     rcpts.forEach(r => { if(r.cc) r.cc.split(';').forEach(c=>{const t=c.trim();if(t)ccSet.add(t);}); });
     const ccList = [...ccSet];
 
     // 업무별 towerNo 적용한 인원 목록
-    const workRows = rows.map(r => ({...r, towerNo: getTowerNoFor(r, curSite, work)}));
+    const workRows = rows.map(r => ({...r, towerNo: getTowerNoFor(r, site, work)}));
     const regCount = workRows.filter(r=>r.type==='reg').length;
     const delCount = workRows.filter(r=>r.type==='del').length;
 
-    const tableHtml = buildEmailTableFor(curSite, work, workRows);
-    const subject   = buildSubjectFor(curSite, work, regCount, delCount);
-    const body      = buildBodyFor(curSite, work, regCount, delCount, date, '', tableHtml);
+    const tableHtml = buildEmailTableFor(site, work, workRows);
+    const subject   = buildSubjectFor(site, work, regCount, delCount);
+    const body      = buildBodyFor(site, work, regCount, delCount, date, '', tableHtml);
 
     const payload = {
-      사업장: curSite, 업무: work,
+      사업장: site, 업무: work,
       요청일: date,
       수신자목록: toList,
       참조목록: ccList,
@@ -1168,12 +1245,12 @@ async function submitForm() {
       const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
       if (res.ok || res.status===202) {
         successCount++;
-        toast(`✅ [${work}] 등록 ${regCount}명 · 삭제 ${delCount}명 전송됨`, 'ok');
+        toast(`✅ [${site} · ${work}] 등록 ${regCount}명 · 삭제 ${delCount}명 전송됨`, 'ok');
       } else {
-        toast(`❌ [${work}] 전송 실패 (${res.status})`, 'err');
+        toast(`❌ [${site} · ${work}] 전송 실패 (${res.status})`, 'err');
       }
     } catch(e) {
-      toast(`❌ [${work}] 오류: ${e.message}`, 'err');
+      toast(`❌ [${site} · ${work}] 오류: ${e.message}`, 'err');
     }
   }
 
@@ -1190,6 +1267,10 @@ async function submitForm() {
 function resetAll() {
   rows = [];
   selectedWorks = new Set();
+  // 체크박스 전부 해제
+  document.querySelectorAll('.site-chk, .work-chk2').forEach(cb => cb.checked = false);
+  document.querySelectorAll('.work-node').forEach(n => n.classList.remove('checked'));
+  updateSelSummary();
   renderTable();
   document.getElementById('n_date').value = today;
   document.getElementById('n_card').value = '';
