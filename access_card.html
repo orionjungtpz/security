@@ -433,13 +433,20 @@ function getTowerCol() {
   if (!curSite || !curWork) return null;
   const key = `${curSite}__${curWork}`;
   const map = {
+    // 송도 (J열)
     '송도__관제': COL.SONGDO,
     '송도__9층 카페': COL.SONGDO,
+    '송도__9층 회의실': COL.SONGDO,
     '송도__12층 식당/카페': COL.SONGDO,
     '송도__근태': COL.SONGDO,
+    // 셔틀버스/서울역 (L열)
+    '송도__통근버스': COL.SHUTTLE_SEOUL,
+    '송도__서울역 관제': COL.SHUTTLE_SEOUL,
     '서울역__관제': COL.SHUTTLE_SEOUL,
     '셔틀버스__셔틀버스': COL.SHUTTLE_SEOUL,
+    // 센터 (K열)
     '센터__관제': COL.CENTER,
+    // 센터식당 (M열)
     '센터__식당': COL.CENTER_DINING,
   };
   return map[key] ?? COL.SONGDO;
@@ -450,7 +457,9 @@ function getTowerHeader() {
   if (!curSite || !curWork) return '번호';
   const key = `${curSite}__${curWork}`;
   const map = {
-    '송도__관제':'송도번호','송도__9층 카페':'송도번호','송도__12층 식당/카페':'송도번호','송도__근태':'송도번호',
+    '송도__관제':'송도번호','송도__9층 카페':'송도번호','송도__9층 회의실':'송도번호',
+    '송도__12층 식당/카페':'송도번호','송도__근태':'송도번호',
+    '송도__통근버스':'셔틀버스번호','송도__서울역 관제':'서울역번호',
     '서울역__관제':'서울역번호','셔틀버스__셔틀버스':'셔틀버스번호',
     '센터__관제':'센터번호','센터__식당':'센터식당번호',
   };
@@ -463,6 +472,7 @@ function getMailConfig() {
   // 김영은 담당 (센터 관제, 센터 식당) → T.02-3457-4344
   // 김영민 담당 (송도 전체, 서울역, 셔틀버스) → T.02-3457-4335
   const yeongeun = ['센터__관제','센터__식당'];
+  // 김영민: 송도 전체, 서울역, 셔틀버스
   const isYeongeun = yeongeun.includes(key);
   return {
     manager: isYeongeun ? '김영은' : '김영민',
@@ -476,12 +486,15 @@ function getMailColumns() {
   const maps = {
     '송도__관제':        ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'],
     '송도__9층 카페':    ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'],
+    '송도__9층 회의실':  ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'],
     '송도__12층 식당/카페':['출입증','요청일','사번','성명','부서','휴대폰','송도번호'],
+    '송도__근태':        ['출입증','사번','성명','휴대폰','송도번호','비고'],
+    '송도__통근버스':    ['출입증','요청일','사번','성명','부서','휴대폰','셔틀버스번호'],
+    '송도__서울역 관제': ['출입증','요청일','사번','성명','부서','휴대폰','서울역번호'],
     '서울역__관제':      ['출입증','요청일','사번','성명','부서','휴대폰','서울역번호'],
     '셔틀버스__셔틀버스':['출입증','요청일','사번','성명','부서','휴대폰','셔틀버스번호'],
     '센터__관제':        ['출입증','사번','성명','부서','휴대폰','권한','센터번호','비고'],
     '센터__식당':        ['사번','성명','센터식당번호','구분','등록삭제'],
-    '송도__근태':        ['출입증','사번','성명','휴대폰','송도번호','비고'],
   };
   return maps[key] ?? ['출입증','요청일','사번','성명','부서','휴대폰','번호'];
 }
@@ -912,9 +925,10 @@ async function addRow() {
     if (url) {
       const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({성명:name,사번:empid})});
       if (res.ok){const d=await res.json();const r=d.result||d;if(r.found&&r.employee){const e=r.employee;
-          const towerNo = curSite==='센터' ? (e.센터번호||'')
-            : (curSite==='서울역'||curWork==='셔틀버스') ? (e.서울역번호||'')
-            : curWork==='센터식당'||curWork==='식당' ? (e.센터식당번호||'')
+          const col = getTowerCol();
+          const towerNo = col===COL.CENTER ? (e.센터번호||'')
+            : col===COL.SHUTTLE_SEOUL ? (e.서울역번호||'')
+            : col===COL.CENTER_DINING ? (e.센터식당번호||'')
             : (e.송도번호||'');
           console.log('employee:', JSON.stringify(e));
           console.log('curSite:', curSite, 'curWork:', curWork, 'towerNo:', towerNo);
