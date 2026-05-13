@@ -436,6 +436,7 @@ function getTowerCol() {
     '송도__관제': COL.SONGDO,
     '송도__9층 카페': COL.SONGDO,
     '송도__12층 식당/카페': COL.SONGDO,
+    '송도__근태': COL.SONGDO,
     '서울역__관제': COL.SHUTTLE_SEOUL,
     '셔틀버스__셔틀버스': COL.SHUTTLE_SEOUL,
     '센터__관제': COL.CENTER,
@@ -449,7 +450,7 @@ function getTowerHeader() {
   if (!curSite || !curWork) return '번호';
   const key = `${curSite}__${curWork}`;
   const map = {
-    '송도__관제':'송도번호','송도__9층 카페':'송도번호','송도__12층 식당/카페':'송도번호',
+    '송도__관제':'송도번호','송도__9층 카페':'송도번호','송도__12층 식당/카페':'송도번호','송도__근태':'송도번호',
     '서울역__관제':'서울역번호','셔틀버스__셔틀버스':'셔틀버스번호',
     '센터__관제':'센터번호','센터__식당':'센터식당번호',
   };
@@ -480,12 +481,25 @@ function getMailColumns() {
     '셔틀버스__셔틀버스':['출입증','요청일','사번','성명','부서','휴대폰','셔틀버스번호'],
     '센터__관제':        ['출입증','사번','성명','부서','휴대폰','권한','센터번호','비고'],
     '센터__식당':        ['사번','성명','센터식당번호','구분','등록삭제'],
+    '송도__근태':        ['출입증','사번','성명','휴대폰','송도번호','비고'],
   };
   return maps[key] ?? ['출입증','요청일','사번','성명','부서','휴대폰','번호'];
 }
 
 // ── 제목 생성 ──
 function buildSubject(regCount, delCount) {
+  const key = `${curSite}__${curWork}`;
+  // 근태 전용 제목
+  if (key === '송도__근태') {
+    if (regCount > 0 && delCount > 0) {
+      return `[포스코인터내셔널] 사원증 신규제작 및 삭제 따른 공유의 건 (신규 ${regCount}건, 삭제 ${delCount}건)`;
+    } else if (regCount > 0) {
+      return `[포스코인터내셔널] 사원증 신규 제작 따른 공유의 건 (${regCount}건)`;
+    } else {
+      return `[포스코인터내셔널] 사원증 삭제 따른 공유의 건 (${delCount}건)`;
+    }
+  }
+  // 일반 제목
   const sitework = `${curSite || ''} ${curWork || ''}`.trim();
   let action = '';
   let countStr = '';
@@ -499,13 +513,32 @@ function buildSubject(regCount, delCount) {
     action = '삭제';
     countStr = `(삭제 ${delCount}건)`;
   }
-  // 센터 식당은 "식당 등록/삭제 요청(ㅇ건)" 형식 — 이제 통일 양식으로
   return `[포스코인터내셔널] ${sitework} ${action} 요청${countStr}`;
 }
 
 // ── 메일 본문 생성 ──
 function buildBody(regCount, delCount, date, card, tableHtml) {
   const cfg = getMailConfig();
+  const key = `${curSite}__${curWork}`;
+
+  // 근태 전용 본문
+  if (key === '송도__근태') {
+    let action = '';
+    if (regCount > 0 && delCount > 0) action = '신규제작 및 삭제';
+    else if (regCount > 0) action = '신규제작';
+    else action = '삭제';
+    return `본 메일은 당사 출입증 AI Agent로 부터 자동발송되었습니다.
+문의사항 있으시면 담당자에게 (T.02-3457-4335) 연락부탁드립니다.
+
+안녕하세요, 포스코휴먼스 사원증 제작 담당자입니다.
+아래와 같이 포스코인터내셔널 출입증을 ${action}하여 정보 전달드리오니 업무에 참고부탁드립니다.
+
+${tableHtml}
+
+감사합니다.`;
+  }
+
+  // 일반 본문
   let action = '';
   if (regCount > 0 && delCount > 0) action = '등록 및 삭제';
   else if (regCount > 0) action = '등록';
@@ -548,7 +581,13 @@ function buildEmailTable(targetRows) {
         case '휴대폰': val = r.phone || ''; break;
         case '송도번호': case '서울역번호': case '셔틀버스번호': case '센터번호': case '센터식당번호': val = r.towerNo || ''; break;
         case '구분': val = '포스코인터내셔널'; break;
-        case '등록삭제': case '비고': val = r.type === 'reg' ? '등록' : '삭제'; break;
+        case '등록삭제': val = r.type === 'reg' ? '등록' : '삭제'; break;
+        case '비고': {
+          const key2 = `${curSite}__${curWork}`;
+          if (key2 === '송도__근태') val = r.type === 'reg' ? (r.note||'') : '삭제';
+          else val = r.note || '';
+          break;
+        }
         default: val = '';
       }
       return `<td style="padding:8px 10px;font-size:13px;border-bottom:1px solid #e8e7ef;">${val}</td>`;
