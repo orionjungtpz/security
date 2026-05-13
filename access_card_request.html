@@ -192,10 +192,9 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
 .site-node{margin-bottom:2px;}
 .site-node-header{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;cursor:default;transition:background .12s;user-select:none;}
 .site-node-header:hover{background:#e8e7ef;}
-.site-node-toggle{background:none;border:none;cursor:pointer;padding:0;color:#747683;font-size:14px;line-height:1;width:16px;text-align:center;flex-shrink:0;transition:transform .2s;}
-.site-node-toggle.open{transform:rotate(90deg);}
 .site-chk{width:14px;height:14px;cursor:pointer;accent-color:#001d59;flex-shrink:0;}
-.site-node-label{font-size:13px;font-weight:700;color:#1a1b21;cursor:pointer;flex:1;}
+.site-node-label{font-size:13px;font-weight:700;color:#1a1b21;cursor:pointer;flex:1;transition:color .15s;}
+.site-node-label:hover{color:#001d59;}
 .work-tree{padding-left:28px;overflow:hidden;max-height:0;transition:max-height .25s ease;}
 .work-tree.open{max-height:500px;}
 .work-node{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;cursor:default;transition:background .12s;}
@@ -749,9 +748,8 @@ function renderSiteButtons() {
     const sid = `site_${s.replace(/\s/g,'_')}`;
     return `<div class="site-node" id="node_${sid}">
       <div class="site-node-header">
-        <button class="site-node-toggle" id="toggle_${sid}" onclick="toggleSiteOpen('${s}')">▶</button>
         <input type="checkbox" class="site-chk" id="chk_${sid}" onclick="toggleSiteCheck('${s}', this.checked)"/>
-        <label class="site-node-label" for="toggle_${sid}" onclick="toggleSiteOpen('${s}')">${icons[s]||'📍'} ${s}</label>
+        <label class="site-node-label" onclick="toggleSiteOpen('${s}')">${icons[s]||'📍'} ${s}</label>
       </div>
       <div class="work-tree" id="works_${sid}">
         ${works.map(w => {
@@ -769,10 +767,8 @@ function renderSiteButtons() {
 function toggleSiteOpen(site) {
   const sid = `site_${site.replace(/\s/g,'_')}`;
   const workTree = document.getElementById(`works_${sid}`);
-  const toggle = document.getElementById(`toggle_${sid}`);
   if (!workTree) return;
-  const isOpen = workTree.classList.toggle('open');
-  toggle.classList.toggle('open', isOpen);
+  workTree.classList.toggle('open');
 }
 
 function toggleSiteCheck(site, checked) {
@@ -790,8 +786,7 @@ function toggleSiteCheck(site, checked) {
   // 업무 목록 자동 펼치기
   if (checked) {
     const workTree = document.getElementById(`works_${sid}`);
-    const toggle = document.getElementById(`toggle_${sid}`);
-    if (workTree) { workTree.classList.add('open'); toggle.classList.add('open'); }
+    if (workTree) workTree.classList.add('open');
   }
   updateRcptFromWorks();
   updateSelBadge();
