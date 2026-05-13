@@ -186,6 +186,23 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
 /* Spinner */
 .spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
 @keyframes spin{to{transform:rotate(360deg);}}
+
+/* 동명이인 팝업 */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.4);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal-box{background:#fff;border-radius:14px;padding:24px;width:480px;max-width:92vw;box-shadow:0 16px 48px rgba(0,0,0,.15);transform:translateY(8px);transition:transform .2s;}
+.modal-overlay.show .modal-box{transform:translateY(0);}
+.modal-title{font-size:15px;font-weight:700;color:#001d59;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:#747683;margin-bottom:16px;}
+.modal-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+.modal-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #e8e7ef;border-radius:8px;cursor:pointer;transition:all .15s;}
+.modal-item:hover{border-color:#1d5daf;background:#f4f8ff;}
+.modal-item-info{display:flex;flex-direction:column;gap:2px;}
+.modal-item-name{font-size:13px;font-weight:700;color:#1a1b21;}
+.modal-item-sub{font-size:11px;color:#747683;}
+.modal-item-btn{font-size:11px;font-weight:700;color:#1d5daf;background:#dbe1ff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;}
+.modal-cancel{width:100%;margin-top:12px;background:none;border:1px solid #c4c6d4;border-radius:8px;padding:9px;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#747683;cursor:pointer;transition:background .15s;}
+.modal-cancel:hover{background:#f4f3fb;}
 </style>
 </head>
 <body>
@@ -246,12 +263,7 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
     <div class="rcpt-preview show" id="rcptPreview"></div>
   </div>
 
-  <nav style="flex:1;padding:4px 0;">
-    <div class="nav-item active" onclick="focusLookup();setNavActive(this)">
-      <span class="material-symbols-outlined" style="font-size:20px;">person_search</span>
-      직원 조회
-    </div>
-  </nav>
+  <nav style="flex:1;padding:4px 0;"></nav>
 
   <div style="padding:12px 8px 0;">
     <button class="sys-btn" onclick="toggleCfg()">
@@ -411,6 +423,16 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
   </div>
 
 </main>
+</div>
+
+<!-- 동명이인 선택 모달 -->
+<div class="modal-overlay" id="dupeModal">
+  <div class="modal-box">
+    <div class="modal-title">동명이인 검색 결과</div>
+    <div class="modal-sub" id="dupeModalSub"></div>
+    <div class="modal-list" id="dupeModalList"></div>
+    <button class="modal-cancel" onclick="closeDupeModal()">취소</button>
+  </div>
 </div>
 
 <div class="toast-wrap" id="toastWrap"></div>
@@ -921,6 +943,52 @@ function processPasteText(text) {
 // ══════════════════════════════════════════
 //  ROW ADD (직원 조회)
 // ══════════════════════════════════════════
+function buildRowFromEmployee(e) {
+  return {
+    empid: e.사번, name: e.성명, engname: e.영문이름, rank: e.직급,
+    dept: e.부서, phone: e.휴대폰||'', towerNo: e.송도번호||'',
+    cardType: e.출입증||'',
+    allNums: {송도:e.송도번호||'', 센터:e.센터번호||'', 서울역:e.서울역번호||'', 센터식당:e.센터식당번호||''},
+    type:'reg', card: e.출입증||'', date: document.getElementById('n_date').value, note:''
+  };
+}
+
+function addRowFromEmployee(e) {
+  if (rows.some(r => r.empid === e.사번)) { showMsg('이미 추가된 인원입니다.','dup'); return; }
+  rows.push(buildRowFromEmployee(e));
+  renderTable();
+  showMsg(`✅ ${e.성명} (${e.사번}) 추가됨`, 'ok');
+}
+
+function showDupeModal(candidates, searchName) {
+  const modal = document.getElementById('dupeModal');
+  document.getElementById('dupeModalSub').textContent = `"${searchName}" 검색 결과 ${candidates.length}명 — 추가할 직원을 선택하세요`;
+  document.getElementById('dupeModalList').innerHTML = candidates.map((e, i) => `
+    <div class="modal-item" onclick="selectDupeCandidate(${i})">
+      <div class="modal-item-info">
+        <div class="modal-item-name">${e.성명} <span style="font-size:11px;color:#747683;font-weight:400;">(${e.사번})</span></div>
+        <div class="modal-item-sub">${e.직급||''} · ${e.부서||''}</div>
+      </div>
+      <button class="modal-item-btn">선택</button>
+    </div>`).join('');
+  modal._candidates = candidates;
+  modal.classList.add('show');
+}
+
+function selectDupeCandidate(idx) {
+  const modal = document.getElementById('dupeModal');
+  const e = modal._candidates[idx];
+  closeDupeModal();
+  addRowFromEmployee(e);
+  document.getElementById('sn_name').value = '';
+  document.getElementById('sn_empid').value = '';
+  document.getElementById('sn_name').focus();
+}
+
+function closeDupeModal() {
+  document.getElementById('dupeModal').classList.remove('show');
+}
+
 async function addRow() {
   const name  = document.getElementById('sn_name').value.trim();
   const empid = document.getElementById('sn_empid').value.trim();
@@ -934,42 +1002,41 @@ async function addRow() {
   btn.disabled=true; sp.style.display='block'; ico.style.display='none'; txt.textContent='조회중';
 
   const url = document.getElementById('cfgLookup').value.trim();
-  let found = null;
-  const DEMO = [
-    {empid:'10012345',name:'홍길동',engname:'HONG GIL DONG',rank:'대리',dept:'행정지원그룹',phone:'010-1234-5678',towerNo:'T-042'},
-    {empid:'10023456',name:'김영희',engname:'KIM YOUNG HEE',rank:'과장',dept:'재무회계그룹',phone:'010-2345-6789',towerNo:'T-105'},
-    {empid:'10034567',name:'이철수',engname:'LEE CHEOL SOO',rank:'사원',dept:'IT지원그룹',phone:'010-3456-7890',towerNo:'T-207'},
-    {empid:'10045678',name:'박지현',engname:'PARK JI HYUN',rank:'부장',dept:'인사그룹',phone:'010-4567-8901',towerNo:'T-301'},
-    {empid:'10056789',name:'최민준',engname:'CHOI MIN JUN',rank:'차장',dept:'전략기획그룹',phone:'010-5678-9012',towerNo:'T-508'},
-  ];
   try {
     if (url) {
       const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({성명:name,사번:empid})});
-      if (res.ok){const d=await res.json();const r=d.result||d;if(r.found&&r.employee){const e=r.employee;
-          // 모든 번호 저장 → allNums로 업무별 재매핑
-          const towerNo = e.송도번호||''; // 기본값, allNums로 재매핑됨
-          found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo,
-            cardType:e.출입증||'',
-            allNums:{송도:e.송도번호||'',센터:e.센터번호||'',서울역:e.서울역번호||'',센터식당:e.센터식당번호||''}};}}
-    } else {
-      await new Promise(r=>setTimeout(r,350));
-      const d = DEMO.find(e=>(name&&empid)?(e.name===name&&e.empid===empid):name?e.name===name:e.empid===empid)||null;
-      if (d) found = {...d};
+      if (res.ok) {
+        const d = await res.json();
+        const r = d.result || d;
+        btn.disabled=false; sp.style.display='none'; ico.style.display=''; txt.textContent='추가';
+        if (r.multiple && r.candidates?.length > 0) {
+          // 동명이인
+          showDupeModal(r.candidates, name);
+          document.getElementById('sn_name').value = '';
+          document.getElementById('sn_empid').value = '';
+        } else if (r.found && r.employee) {
+          addRowFromEmployee(r.employee);
+          document.getElementById('sn_name').value = '';
+          document.getElementById('sn_empid').value = '';
+          document.getElementById('sn_name').focus();
+        } else {
+          showMsg('⚠️ 조회 결과 없음 — 빈 행 추가. 직접 입력해주세요.','no');
+          rows.push({empid, name, engname:'', rank:'', dept:'', phone:'', towerNo:'', type:'reg', card:'', date: document.getElementById('n_date').value, note:''});
+          renderTable();
+          document.getElementById('sn_name').value = '';
+          document.getElementById('sn_empid').value = '';
+        }
+        return;
+      }
     }
   } catch(e){ console.error(e); }
 
   btn.disabled=false; sp.style.display='none'; ico.style.display=''; txt.textContent='추가';
-
-  const towerCol = getTowerCol();
-  const newRow = found
-    ? {...found, type:'reg', card: found.cardType || document.getElementById('n_card').value, date: document.getElementById('n_date').value, note:''}
-    : {empid, name, engname:'', rank:'', dept:'', phone:'', towerNo:'', type:'reg', card: document.getElementById('n_card').value, date: document.getElementById('n_date').value, note:''};
-
-  rows.push(newRow);
+  showMsg('⚠️ 조회 결과 없음 — 빈 행 추가. 직접 입력해주세요.','no');
+  rows.push({empid, name, engname:'', rank:'', dept:'', phone:'', towerNo:'', type:'reg', card:'', date: document.getElementById('n_date').value, note:''});
   renderTable();
-  showMsg(found ? `✅ ${found.name} (${found.empid}) 추가됨` : `⚠️ 조회 결과 없음 — 빈 행 추가. 직접 입력해주세요.`, found?'ok':'no');
-  document.getElementById('sn_name').value='';
-  document.getElementById('sn_empid').value='';
+  document.getElementById('sn_name').value = '';
+  document.getElementById('sn_empid').value = '';
   document.getElementById('sn_name').focus();
 }
 
