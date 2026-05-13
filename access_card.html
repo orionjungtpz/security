@@ -278,7 +278,7 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
         <div>
           <label class="f-label">수신자 목록 Flow URL <span style="color:#ba1a1a;">*</span></label>
           <div style="display:flex;gap:6px;">
-            <input type="url" id="cfgRecipients" class="f-input" style="font-size:11px;" placeholder="https://prod-xx.logic.azure.com/..."/>
+            <input type="url" id="cfgRecipients" class="f-input" style="font-size:11px;" value="https://defaultb9501effd05e4bf18a87898d83f46c.eb.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/db3898d903624eee9c5058faa7a147b7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xHNnOezb-HslBCRsG4Gb4gFuBsb41wBwqGphpNuOtFQ" placeholder="https://prod-xx.logic.azure.com/..."/>
             <button onclick="loadRecipients()" class="btn-primary btn-sm">↺ 재로드</button>
           </div>
         </div>
@@ -288,7 +288,7 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
         </div>
         <div>
           <label class="f-label">제출 Flow URL</label>
-          <input type="url" id="cfgSubmit" class="f-input" style="font-size:11px;" placeholder="https://prod-xx.logic.azure.com/..."/>
+          <input type="url" id="cfgSubmit" class="f-input" style="font-size:11px;" value="https://defaultb9501effd05e4bf18a87898d83f46c.eb.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ad9a662905c148148774d008b58b421a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=aLpibUTUcXj4ks_o8Z9usjv22JaT68w2cFYCD3lexhA" placeholder="https://prod-xx.logic.azure.com/..."/>
         </div>
       </div>
     </div>
@@ -578,25 +578,7 @@ document.getElementById('hdate').textContent =
 async function loadRecipients() {
   const url = document.getElementById('cfgRecipients').value.trim();
   if (!url) {
-    // fallback demo
-    SITE_CONFIG = {
-      '송도': {
-        '관제':           [{company:'포스코와이드', email:'sugjin0@poscowide.com'}],
-        '9층 카페':       [{company:'송도SE', email:'Lilka882@gmail.com'},{company:'송도SE', email:'chjh0920@songdose.co.kr'}],
-        '12층 식당/카페': [{company:'아워홈', email:'hj2731.an@ourhome.co.kr'}],
-      },
-      '센터': {
-        '식당': [{company:'삼성웰스토리', email:'jina214.kim@samsung.com'}],
-        '관제': [{company:'포스코와이드', email:'jinwoo4064@poscowide.com'},{company:'포스코와이드', email:'jjin6842@poscowide.com'},{company:'포스코와이드', email:'dongwo3@poscowide.com'}],
-      },
-      '서울역': {
-        '관제': [{company:'포스코와이드', email:'zhqkddh@naver.com'}],
-      },
-      '셔틀버스': {
-        '셔틀버스': [{company:'드라마운수', email:'dramakjh@poscointl.com'}],
-      },
-    };
-    renderSiteButtons();
+    document.getElementById('siteRow').innerHTML = '<span style="font-size:11px;color:#ba1a1a;padding:4px 10px;display:block;">⚠️ 수신자 목록 URL을 시스템 설정에 입력해주세요</span>';
     return;
   }
   document.getElementById('siteRow').innerHTML = '<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">⏳ 불러오는 중...</span>';
@@ -608,13 +590,14 @@ async function loadRecipients() {
     (data.value||data).forEach(item => {
       const site    = item['사업장']?.trim();
       const work    = item['업무']?.trim();
-      const email   = item['수신자이메일']?.trim();
+      const email   = item['수신자']?.trim();
+      const cc      = item['참조']?.trim() || '';
       const company = item['업체명']?.trim() || '';
       if (!site||!work||!email) return;
       if (!SITE_CONFIG[site]) SITE_CONFIG[site] = {};
       if (!SITE_CONFIG[site][work]) SITE_CONFIG[site][work] = [];
       if (!SITE_CONFIG[site][work].find(r=>r.email===email))
-        SITE_CONFIG[site][work].push({company, email});
+        SITE_CONFIG[site][work].push({company, email, cc});
     });
     renderSiteButtons();
     toast('수신자 정보 로드 완료','ok');
@@ -692,13 +675,24 @@ function renderRcptPreview(rcpts) {
     if (!grouped[r.company]) grouped[r.company] = [];
     grouped[r.company].push(r.email);
   });
+  // TO
   box.innerHTML = Object.entries(grouped).map(([co, emails]) =>
     emails.map(em => `
       <div class="rcpt-item">
-        <span class="co">${co||'(업체명 없음)'}</span>
+        <span class="co" style="color:#1d5daf;">TO</span>
+        <span class="co">${co||''}</span>
         <span class="em">${em}</span>
       </div>`).join('')
   ).join('');
+  // CC
+  const ccList = [...new Set(rcpts.map(r=>r.cc).filter(Boolean))];
+  if (ccList.length) {
+    box.innerHTML += ccList.map(cc => `
+      <div class="rcpt-item">
+        <span class="co" style="color:#747683;">CC</span>
+        <span class="em" style="color:#747683;">${cc}</span>
+      </div>`).join('');
+  }
   wrap.style.display = '';
 }
 
@@ -728,10 +722,21 @@ function applyAutoRcpt(rcpts) {
   clearRcpt('rcptMain');
   const wrap = document.getElementById('rcptMain');
   const addBtn = wrap.querySelector('.rtag-add-btn');
+  // TO
   rcpts.forEach(r => {
     const tag = document.createElement('div');
     tag.className = 'rtag auto';
     tag.innerHTML = `<span class="rlbl">TO</span><input type="email" value="${r.email}"/><button class="rtag-rm" onclick="this.parentElement.remove()">✕</button>`;
+    wrap.insertBefore(tag, addBtn);
+  });
+  // CC (중복 제거)
+  const ccList = [...new Set(rcpts.map(r=>r.cc).filter(Boolean))];
+  ccList.forEach(cc => {
+    const tag = document.createElement('div');
+    tag.className = 'rtag auto';
+    tag.style.borderColor = '#c4c6d4';
+    tag.style.background = '#f4f3fb';
+    tag.innerHTML = `<span class="rlbl" style="color:#747683;background:#e3e2ea;">CC</span><input type="email" value="${cc}"/><button class="rtag-rm" onclick="this.parentElement.remove()">✕</button>`;
     wrap.insertBefore(tag, addBtn);
   });
 }
@@ -757,7 +762,16 @@ function addRcpt(id) {
 }
 
 function getRcpts() {
-  return [...document.querySelectorAll('#rcptMain input[type=email]')].map(i=>i.value.trim()).filter(Boolean);
+  const tags = [...document.querySelectorAll('#rcptMain .rtag')];
+  const to = [], cc = [];
+  tags.forEach(tag => {
+    const lbl = tag.querySelector('.rlbl')?.textContent?.trim();
+    const email = tag.querySelector('input[type=email]')?.value?.trim();
+    if (!email) return;
+    if (lbl === 'CC') cc.push(email);
+    else to.push(email);
+  });
+  return { to, cc };
 }
 
 // ══════════════════════════════════════════
@@ -944,7 +958,8 @@ async function submitForm() {
   const payload = {
     사업장: curSite, 업무: curWork,
     요청일: date, 출입증구분: card,
-    수신자목록: getRcpts(),
+    수신자목록: getRcpts().to,
+    참조목록: getRcpts().cc,
     제목: subject,
     본문: body,
     메일테이블HTML: tableHtml,
