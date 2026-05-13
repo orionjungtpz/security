@@ -227,6 +227,20 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
 .modal-item-btn{font-size:11px;font-weight:700;color:#1d5daf;background:#dbe1ff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;}
 .modal-cancel{width:100%;margin-top:12px;background:none;border:1px solid #c4c6d4;border-radius:8px;padding:9px;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#747683;cursor:pointer;transition:background .15s;}
 .modal-cancel:hover{background:#f4f3fb;}
+
+/* 확인 팝업 */
+.confirm-overlay{position:fixed;inset:0;background:rgba(10,20,40,.4);z-index:600;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.confirm-overlay.show{opacity:1;pointer-events:all;}
+.confirm-box{background:#fff;border-radius:12px;padding:24px;width:360px;max-width:92vw;box-shadow:0 16px 48px rgba(0,0,0,.15);transform:translateY(8px);transition:transform .2s;}
+.confirm-overlay.show .confirm-box{transform:translateY(0);}
+.confirm-icon{font-size:28px;text-align:center;margin-bottom:12px;}
+.confirm-title{font-size:15px;font-weight:700;color:#1a1b21;text-align:center;margin-bottom:6px;}
+.confirm-msg{font-size:13px;color:#747683;text-align:center;margin-bottom:20px;line-height:1.6;}
+.confirm-btns{display:flex;gap:8px;}
+.confirm-btn-ok{flex:1;background:#001d59;color:#fff;border:none;border-radius:8px;padding:10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;}
+.confirm-btn-ok:hover{background:#003087;}
+.confirm-btn-cancel{flex:1;background:#fff;color:#1a1b21;border:1px solid #c4c6d4;border-radius:8px;padding:10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s;}
+.confirm-btn-cancel:hover{background:#f4f3fb;}
 </style>
 </head>
 <body>
@@ -369,19 +383,14 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
 
     <!-- 공통 설정 -->
     <div class="sdiv"><span class="sdiv-lbl">공통 설정</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div style="display:grid;grid-template-columns:240px;gap:12px;margin-bottom:14px;">
       <div>
         <label class="f-label">요청일 <span style="color:#ba1a1a;">*</span></label>
         <input type="date" id="n_date" class="f-input"/>
       </div>
-      <div>
-        <input type="hidden" id="n_card" value=""/>
-      </div>
-      <div>
-        <label class="f-label">비고</label>
-        <input type="text" id="n_note" class="f-input" placeholder="특이사항 (선택)"/>
-      </div>
     </div>
+    <input type="hidden" id="n_card" value=""/>
+    <input type="hidden" id="n_note" value=""/>
 
     <!-- 인원 테이블 -->
     <div class="sdiv"><span class="sdiv-lbl">신청 인원</span><span class="sdiv-note">셀 직접 수정 가능 · 등록/삭제 드롭다운으로 구분</span></div>
@@ -441,6 +450,19 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
   </div>
 
 </main>
+</div>
+
+<!-- 조회결과 없음 확인 팝업 -->
+<div class="confirm-overlay" id="confirmModal">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title" id="confirmTitle">조회 결과 없음</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-btn-cancel" onclick="closeConfirm()">취소</button>
+      <button class="confirm-btn-ok" id="confirmOkBtn" onclick="confirmOk()">직접 입력</button>
+    </div>
+  </div>
 </div>
 
 <!-- 동명이인 선택 모달 -->
@@ -1101,11 +1123,7 @@ async function addRow() {
           document.getElementById('sn_empid').value = '';
           document.getElementById('sn_name').focus();
         } else {
-          showMsg('⚠️ 조회 결과 없음 — 빈 행 추가. 직접 입력해주세요.','no');
-          rows.push({empid, name, engname:'', rank:'', dept:'', phone:'', towerNo:'', type:'reg', card:'', date: document.getElementById('n_date').value, note:''});
-          renderTable();
-          document.getElementById('sn_name').value = '';
-          document.getElementById('sn_empid').value = '';
+          showConfirm(name||empid);
         }
         return;
       }
@@ -1113,12 +1131,7 @@ async function addRow() {
   } catch(e){ console.error(e); }
 
   btn.disabled=false; sp.style.display='none'; ico.style.display=''; txt.textContent='추가';
-  showMsg('⚠️ 조회 결과 없음 — 빈 행 추가. 직접 입력해주세요.','no');
-  rows.push({empid, name, engname:'', rank:'', dept:'', phone:'', towerNo:'', type:'reg', card:'', date: document.getElementById('n_date').value, note:''});
-  renderTable();
-  document.getElementById('sn_name').value = '';
-  document.getElementById('sn_empid').value = '';
-  document.getElementById('sn_name').focus();
+  showConfirm(name||empid);
 }
 
 // ══════════════════════════════════════════
@@ -1264,6 +1277,32 @@ async function submitForm() {
 // ══════════════════════════════════════════
 //  MISC
 // ══════════════════════════════════════════
+// ── 확인 팝업 ──
+let _confirmPendingName = '';
+let _confirmPendingEmpid = '';
+
+function showConfirm(keyword) {
+  _confirmPendingName = document.getElementById('sn_name').value.trim();
+  _confirmPendingEmpid = document.getElementById('sn_empid').value.trim();
+  document.getElementById('confirmMsg').textContent = `"${keyword}" 검색 결과가 없습니다.\n직접 입력하시겠습니까?`;
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+function confirmOk() {
+  closeConfirm();
+  const date = document.getElementById('n_date').value;
+  rows.push({empid:_confirmPendingEmpid, name:_confirmPendingName, engname:'', rank:'', dept:'', phone:'', towerNo:'', type:'reg', card:'', date, note:''});
+  renderTable();
+  showMsg('빈 행이 추가됐습니다. 직접 입력해주세요.','no');
+  document.getElementById('sn_name').value = '';
+  document.getElementById('sn_empid').value = '';
+  document.getElementById('sn_name').focus();
+}
+
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.remove('show');
+}
+
 function resetAll() {
   rows = [];
   selectedWorks = new Set();
