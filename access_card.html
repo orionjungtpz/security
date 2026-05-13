@@ -911,7 +911,7 @@ async function addRow() {
   try {
     if (url) {
       const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({성명:name,사번:empid})});
-      if (res.ok){const d=await res.json();if(d.found&&d.employee){const e=d.employee;found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo:e.타워No||''};}}
+      if (res.ok){const d=await res.json();const r=d.result||d;if(r.found&&r.employee){const e=r.employee;found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo:e.타워No||''};}}
     } else {
       await new Promise(r=>setTimeout(r,350));
       const d = DEMO.find(e=>(name&&empid)?(e.name===name&&e.empid===empid):name?e.name===name:e.empid===empid)||null;
