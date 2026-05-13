@@ -343,11 +343,11 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
     <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;margin-bottom:8px;">
       <div>
         <label class="f-label">성명</label>
-        <input type="text" id="sn_name" class="f-input" placeholder="홍길동" onkeydown="if(event.key==='Enter')addRow()"/>
+        <input type="text" id="sn_name" class="f-input" placeholder="홍길동" onkeydown="if(event.key==='Enter'){event.preventDefault();addRow()}"/>
       </div>
       <div>
         <label class="f-label">사번</label>
-        <input type="text" id="sn_empid" class="f-input" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow()"/>
+        <input type="text" id="sn_empid" class="f-input" placeholder="12345678" onkeydown="if(event.key==='Enter'){event.preventDefault();addRow()}"/>
       </div>
       <button class="btn-primary" id="btnAdd" onclick="addRow()" style="height:40px;padding:0 18px;align-self:flex-end;">
         <div class="spinner" id="spN"></div>
@@ -687,7 +687,7 @@ async function loadRecipients() {
     renderSiteButtons();
     return;
   }
-  document.getElementById('siteRow').innerHTML = '<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">⏳ 불러오는 중...</span>';
+  document.getElementById('siteTree').innerHTML = '<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">⏳ 불러오는 중...</span>';
   try {
     const res = await fetch(url, {method:'GET'});
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -712,7 +712,7 @@ async function loadRecipients() {
     renderSiteButtons();
     toast('수신자 정보 로드 완료','ok');
   } catch(e) {
-    document.getElementById('siteRow').innerHTML = `<span style="font-size:11px;color:#ba1a1a;padding:4px 10px;display:block;">❌ ${e.message}</span>`;
+    document.getElementById('siteTree').innerHTML = `<span style="font-size:11px;color:#ba1a1a;padding:4px 10px;display:block;">❌ ${e.message}</span>`;
     toast('수신자 로드 실패: '+e.message,'err');
   }
 }
