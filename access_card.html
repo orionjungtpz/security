@@ -578,7 +578,24 @@ document.getElementById('hdate').textContent =
 async function loadRecipients() {
   const url = document.getElementById('cfgRecipients').value.trim();
   if (!url) {
-    document.getElementById('siteRow').innerHTML = '<span style="font-size:11px;color:#ba1a1a;padding:4px 10px;display:block;">⚠️ 수신자 목록 URL을 시스템 설정에 입력해주세요</span>';
+    SITE_CONFIG = {
+      '송도': {
+        '관제':           [{company:'포스코와이드', email:'sugjin0@poscowide.com', cc:''}],
+        '9층 카페':       [{company:'송도SE', email:'Lilka882@gmail.com', cc:''},{company:'송도SE', email:'chjh0920@songdose.co.kr', cc:''}],
+        '12층 식당/카페': [{company:'아워홈', email:'hj2731.an@ourhome.co.kr', cc:''}],
+      },
+      '센터': {
+        '식당': [{company:'삼성웰스토리', email:'jina214.kim@samsung.com', cc:''}],
+        '관제': [{company:'포스코와이드', email:'jinwoo4064@poscowide.com', cc:''},{company:'포스코와이드', email:'jjin6842@poscowide.com', cc:''},{company:'포스코와이드', email:'dongwo3@poscowide.com', cc:''}],
+      },
+      '서울역': {
+        '관제': [{company:'포스코와이드', email:'zhqkddh@naver.com', cc:''}],
+      },
+      '셔틀버스': {
+        '셔틀버스': [{company:'드라마운수', email:'dramakjh@poscointl.com', cc:''}],
+      },
+    };
+    renderSiteButtons();
     return;
   }
   document.getElementById('siteRow').innerHTML = '<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">⏳ 불러오는 중...</span>';
