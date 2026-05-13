@@ -925,11 +925,13 @@ async function addRow() {
     if (url) {
       const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({성명:name,사번:empid})});
       if (res.ok){const d=await res.json();const r=d.result||d;if(r.found&&r.employee){const e=r.employee;
-          const col = getTowerCol();
-          const towerNo = col===COL.CENTER ? (e.센터번호||'')
-            : col===COL.SHUTTLE_SEOUL ? (e.서울역번호||'')
-            : col===COL.CENTER_DINING ? (e.센터식당번호||'')
-            : (e.송도번호||'');
+          const key2 = `${curSite}__${curWork}`;
+          let towerNo = '';
+          if (key2==='센터__관제') towerNo = e.센터번호||'';
+          else if (key2==='센터__식당') towerNo = e.센터식당번호||'';
+          else if (key2==='송도__통근버스'||key2==='서울역__관제'||key2==='셔틀버스__셔틀버스') towerNo = e.서울역번호||'';
+          else if (key2==='송도__서울역 관제') towerNo = e.서울역번호||'';
+          else towerNo = e.송도번호||'';
           console.log('employee:', JSON.stringify(e));
           console.log('curSite:', curSite, 'curWork:', curWork, 'towerNo:', towerNo);
           console.log('e keys:', Object.keys(e), 'e.송도번호:', e['송도번호'], 'towerNo:', towerNo, 'curSite:', curSite, 'curWork:', curWork);
