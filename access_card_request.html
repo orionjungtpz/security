@@ -405,13 +405,16 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
             <th>영문이름</th>
             <th>부서</th>
             <th>휴대폰</th>
-            <th id="thTowerNo">번호</th>
+            <th>송도번호</th>
+            <th>센터번호</th>
+            <th>셔틀버스번호</th>
+            <th>센터식당번호</th>
             <th>비고</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="tbodyMain">
-          <tr><td colspan="11">
+          <tr><td colspan="14">
             <div class="tbl-empty">
               <span class="material-symbols-outlined" style="font-size:28px;display:block;margin:0 auto 8px;opacity:.35;">person_search</span>
               직원 조회 또는 엑셀 붙여넣기로 인원을 추가하세요
@@ -512,6 +515,12 @@ function getTowerColFor(site, work) {
     '센터__식당': COL.CENTER_DINING,
     // test
     'test__test': COL.SONGDO,
+    // Test 사업장
+    'Test__송도': COL.SONGDO,
+    'Test__통근버스': COL.SHUTTLE_SEOUL,
+    'Test__서울역 관제': COL.SHUTTLE_SEOUL,
+    'Test__센터관제': COL.CENTER,
+    'Test__센터식당': COL.CENTER_DINING,
   };
   return map[key] ?? COL.SONGDO;
 }
@@ -534,6 +543,9 @@ function getTowerHeaderFor(site, work) {
     '서울역__관제':'서울역번호',
     '센터__관제':'센터번호','센터__식당':'센터식당번호',
     'test__test':'송도번호',
+    'Test__송도':'송도번호','Test__통근버스':'셔틀버스번호',
+    'Test__서울역 관제':'서울역번호',
+    'Test__센터관제':'센터번호','Test__센터식당':'센터식당번호',
   };
   return map[key] ?? '번호';
 }
@@ -544,7 +556,7 @@ function getMailConfigFor(site, work) {
   const key = `${site}__${work}`;
   // 김영은 담당 (센터 관제, 센터 식당) → T.02-3457-4344
   // 김영민 담당 (송도 전체, 서울역, 셔틀버스) → T.02-3457-4335
-  const yeongeun = ['센터__관제','센터__식당'];
+  const yeongeun = ['센터__관제','센터__식당','Test__센터관제','Test__센터식당'];
   const isYeongeun = yeongeun.includes(key);
   return {
     manager: isYeongeun ? '김영은' : '김영민',
@@ -567,6 +579,11 @@ function getMailColumnsFor(site, work) {
     '센터__관제':           ['출입증','사번','성명','부서','휴대폰','권한','센터번호','비고','등록삭제'],
     '센터__식당':           ['사번','성명','센터식당번호','구분','등록삭제'],
     'test__test':           ['출입증','요청일','사번','성명','부서','휴대폰','송도번호','등록삭제'],
+    'Test__송도':           ['출입증','요청일','사번','성명','부서','휴대폰','송도번호','등록삭제'],
+    'Test__통근버스':       ['출입증','요청일','사번','성명','부서','휴대폰','셔틀버스번호','등록삭제'],
+    'Test__서울역 관제':    ['출입증','요청일','사번','성명','부서','휴대폰','서울역번호','등록삭제'],
+    'Test__센터관제':       ['출입증','사번','성명','부서','휴대폰','권한','센터번호','비고','등록삭제'],
+    'Test__센터식당':       ['사번','성명','센터식당번호','구분','등록삭제'],
   };
   return maps[key] ?? ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'];
 }
@@ -1020,11 +1037,14 @@ function processPasteText(text) {
     const dept    = cells[COL.DEPT]    || '';
     const phone   = cells[COL.PHONE]   || '';
     const note    = cells[COL.NOTE]    || '';
-    const towerNo = towerCol !== null ? (cells[towerCol] || '') : '';
-    // 원본 엑셀 셀 전체 저장 (나중에 업무 변경 시 재매핑용)
     const rawCells = [...cells];
-
-    rows.push({ empid, name, engname, rank, dept, phone, towerNo, note, card, date, type:'reg', rawCells });
+    const nums = {
+      송도: cells[COL.SONGDO] || '',
+      센터: cells[COL.CENTER] || '',
+      셔틀: cells[COL.SHUTTLE_SEOUL] || '',
+      센터식당: cells[COL.CENTER_DINING] || '',
+    };
+    rows.push({ empid, name, engname, rank, dept, phone, nums, note, card, date, type:'reg', rawCells });
     added++;
   });
 
@@ -1044,9 +1064,9 @@ function processPasteText(text) {
 function buildRowFromEmployee(e) {
   return {
     empid: e.사번, name: e.성명, engname: e.영문이름, rank: e.직급,
-    dept: e.부서, phone: e.휴대폰||'', towerNo: e.송도번호||'',
+    dept: e.부서, phone: e.휴대폰||'',
     cardType: e.출입증||'',
-    allNums: {송도:e.송도번호||'', 센터:e.센터번호||'', 서울역:e.서울역번호||'', 센터식당:e.센터식당번호||''},
+    nums: {송도:e.송도번호||'', 센터:e.센터번호||'', 셔틀:e.서울역번호||'', 센터식당:e.센터식당번호||''},
     type:'reg', card: e.출입증||'', date: document.getElementById('n_date').value, note:''
   };
 }
@@ -1150,7 +1170,7 @@ function renderTable() {
     : '인원을 추가한 후 전송하세요';
 
   if (!rows.length) {
-    tbody.innerHTML='<tr><td colspan="11"><div class="tbl-empty"><span class="material-symbols-outlined" style="font-size:28px;display:block;margin:0 auto 8px;opacity:.35;">person_search</span>직원 조회 또는 엑셀 붙여넣기로 인원을 추가하세요</div></td></tr>';
+    tbody.innerHTML='<tr><td colspan="14"><div class="tbl-empty"><span class="material-symbols-outlined" style="font-size:28px;display:block;margin:0 auto 8px;opacity:.35;">person_search</span>직원 조회 또는 엑셀 붙여넣기로 인원을 추가하세요</div></td></tr>';
     return;
   }
 
@@ -1167,7 +1187,10 @@ function renderTable() {
       <td><input class="cell-in" value="${esc(r.engname)}" placeholder="영문이름" oninput="upd(${i},'engname',this.value)" style="min-width:110px;"/></td>
       <td><input class="cell-in ${r.dept?'filled':''}" value="${esc(r.dept)}" placeholder="부서" oninput="upd(${i},'dept',this.value)" style="min-width:90px;"/></td>
       <td><input class="cell-in" value="${esc(r.phone)}" placeholder="010-0000-0000" oninput="upd(${i},'phone',this.value)" style="min-width:110px;"/></td>
-      <td><input class="cell-in ${r.towerNo?'filled':''}" value="${esc(r.towerNo)}" placeholder="-" oninput="upd(${i},'towerNo',this.value)" style="width:80px;"/></td>
+      <td><input class="cell-in ${r.nums?.송도?'filled':''}" value="${esc(r.nums?.송도||r.towerNo||'')}" placeholder="-" oninput="updNums(${i},'송도',this.value)" style="width:90px;"/></td>
+      <td><input class="cell-in ${r.nums?.센터?'filled':''}" value="${esc(r.nums?.센터||'')}" placeholder="-" oninput="updNums(${i},'센터',this.value)" style="width:90px;"/></td>
+      <td><input class="cell-in ${r.nums?.셔틀?'filled':''}" value="${esc(r.nums?.셔틀||'')}" placeholder="-" oninput="updNums(${i},'셔틀',this.value)" style="width:90px;"/></td>
+      <td><input class="cell-in ${r.nums?.센터식당?'filled':''}" value="${esc(r.nums?.센터식당||'')}" placeholder="-" oninput="updNums(${i},'센터식당',this.value)" style="width:90px;"/></td>
       <td><input class="cell-in" value="${esc(r.note)}" placeholder="비고" oninput="upd(${i},'note',this.value)" style="min-width:80px;"/></td>
       <td><button class="btn-row-del" onclick="delRow(${i})">✕</button></td>
     </tr>`;
@@ -1177,6 +1200,7 @@ function renderTable() {
 }
 
 function upd(i,f,v){ if(rows[i]) rows[i][f]=v; }
+function updNums(i,k,v){ if(rows[i]){ if(!rows[i].nums) rows[i].nums={}; rows[i].nums[k]=v; } }
 function delRow(i){ rows.splice(i,1); renderTable(); }
 function esc(v){ return (v||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
@@ -1185,16 +1209,12 @@ function esc(v){ return (v||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 // ══════════════════════════════════════════
 // 업무별 towerNo 계산 (rawCells or allNums 기반)
 function getTowerNoFor(r, site, work) {
-  const col = getTowerColFor(site, work);
-  if (r.rawCells && col !== null) return r.rawCells[col] || '';
-  if (r.allNums) {
-    const key = `${site}__${work}`;
-    if (key==='센터__관제') return r.allNums.센터;
-    if (key==='센터__식당') return r.allNums.센터식당;
-    if (key==='송도__통근버스'||key==='서울역__관제') return r.allNums.서울역;
-    return r.allNums.송도;
-  }
-  return r.towerNo || '';
+  const nums = r.nums || {};
+  const key = `${site}__${work}`;
+  if (key==='센터__관제'||key==='Test__센터관제') return nums.센터 || '';
+  if (key==='센터__식당'||key==='Test__센터식당') return nums.센터식당 || '';
+  if (key==='송도__통근버스'||key==='서울역__관제'||key==='Test__통근버스'||key==='Test__서울역 관제') return nums.셔틀 || '';
+  return nums.송도 || '';
 }
 
 async function submitForm() {
@@ -1286,7 +1306,7 @@ function showConfirm(keyword) {
 function confirmOk() {
   closeConfirm();
   const date = document.getElementById('n_date').value;
-  rows.push({empid:_confirmPendingEmpid, name:_confirmPendingName, engname:'', rank:'', dept:'', phone:'', towerNo:'', type:'reg', card:'', date, note:''});
+  rows.push({empid:_confirmPendingEmpid, name:_confirmPendingName, engname:'', rank:'', dept:'', phone:'', nums:{송도:'',센터:'',셔틀:'',센터식당:''}, type:'reg', card:'', date, note:''});
   renderTable();
   showMsg('빈 행이 추가됐습니다. 직접 입력해주세요.','no');
   document.getElementById('sn_name').value = '';
