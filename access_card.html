@@ -605,16 +605,20 @@ async function loadRecipients() {
     const data = await res.json();
     SITE_CONFIG = {};
     (data.value||data).forEach(item => {
-      const site    = item['사업장']?.trim();
-      const work    = item['업무']?.trim();
-      const email   = item['수신자']?.trim();
-      const cc      = item['참조']?.trim() || '';
-      const company = item['업체명']?.trim() || '';
-      if (!site||!work||!email) return;
+      const site    = (item['Title'] || item['사업장'] || '')?.trim();
+      const work    = (item['OData__xc5c5__xbb34_'] || item['업무'] || '')?.trim();
+      const company = (item['OData__xc5c5__xccb4__xba85_'] || item['업체명'] || '')?.trim();
+      const rawEmail = (item['OData__xc218__xc2e0__xc790_'] || item['수신자'] || '')?.trim();
+      const rawCc   = (item['OData__xcc38__xc870_'] || item['참조'] || '')?.trim() || '';
+      if (!site||!work||!rawEmail) return;
       if (!SITE_CONFIG[site]) SITE_CONFIG[site] = {};
       if (!SITE_CONFIG[site][work]) SITE_CONFIG[site][work] = [];
-      if (!SITE_CONFIG[site][work].find(r=>r.email===email))
-        SITE_CONFIG[site][work].push({company, email, cc});
+      // 수신자/참조 세미콜론으로 여러 명 가능
+      const emails = rawEmail.split(';').map(e=>e.trim()).filter(Boolean);
+      emails.forEach(email => {
+        if (!SITE_CONFIG[site][work].find(r=>r.email===email))
+          SITE_CONFIG[site][work].push({company, email, cc: rawCc});
+      });
     });
     renderSiteButtons();
     toast('수신자 정보 로드 완료','ok');
