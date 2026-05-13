@@ -646,6 +646,7 @@ function getMailConfigFor(site, work) {
   return {
     manager: isYeongeun ? '김영은' : '김영민',
     phone: isYeongeun ? 'T.02-3457-4344' : 'T.02-3457-4335',
+    replyTo: isYeongeun ? 'esffa0207@poscointl.com' : 'kimymin@poscointl.com',
   };
 }
 function getMailConfig() { const {site,work}=getFirstSiteWork(); return getMailConfigFor(site,work); }
@@ -1342,6 +1343,7 @@ async function submitForm() {
       요청일: date,
       수신자목록: toList,
       참조목록: ccList,
+      replyTo: getMailConfigFor(site, work).replyTo,
       제목: subject,
       본문: body,
       메일테이블HTML: tableHtml,
