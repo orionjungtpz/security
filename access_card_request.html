@@ -187,6 +187,73 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
 .spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ── Mobile ── */
+@media(max-width:768px){
+  .app-body{flex-direction:column;height:auto;}
+  aside{
+    width:100%;height:auto;border-right:none;
+    border-bottom:1px solid #c4c6d4;
+    padding:12px 0 8px;
+    max-height:0;overflow:hidden;
+    transition:max-height .3s ease;
+  }
+  aside.mob-open{max-height:600px;}
+  main{padding:16px 14px;}
+  .app-header{padding:0 14px;}
+  .h-title{font-size:15px;}
+
+  /* 모바일 햄버거 버튼 */
+  .mob-menu-btn{
+    display:flex!important;align-items:center;gap:6px;
+    background:#eeedf5;border:none;border-radius:8px;
+    padding:6px 12px;font-family:'Noto Sans KR',sans-serif;
+    font-size:12px;font-weight:700;color:#001d59;cursor:pointer;
+  }
+
+  /* 페이지 헤더 */
+  .page-header{flex-direction:column;align-items:flex-start;gap:8px;}
+  .page-title{font-size:20px;}
+
+  /* 카드 */
+  .card{padding:14px;}
+  .card-header{flex-wrap:wrap;gap:8px;}
+
+  /* 검색바 */
+  .search-grid{grid-template-columns:1fr 1fr!important;}
+  #btnAdd{grid-column:1/-1;width:100%;height:44px;}
+
+  /* 붙여넣기 - 모바일에선 접어두기 */
+  .paste-zone{display:none;}
+  .paste-hint{display:none;}
+  .sdiv.paste-sdiv{display:none;}
+
+  /* 테이블 */
+  .tbl-wrap{font-size:12px;}
+  .data-tbl thead th{padding:8px 6px;font-size:9px;}
+  .cell-in{padding:8px 6px;font-size:12px;}
+  .cell-sel{padding:8px 4px;font-size:12px;}
+
+  /* 수신자 박스 */
+  .rcpt-box{padding:10px 12px;}
+  .rtag input[type=email]{width:130px;}
+
+  /* 액션 버튼 */
+  .actions{flex-direction:column;gap:10px;align-items:stretch;}
+  .actions-info{text-align:center;}
+  .actions > div{display:flex;gap:8px;}
+  .actions > div button{flex:1;}
+  .btn-primary,.btn-outline{padding:11px 16px;font-size:14px;}
+
+  /* 선택 요약 */
+  .sel-summary{margin:0 8px 10px;}
+
+  /* 공통설정 */
+  .common-grid{grid-template-columns:1fr!important;}
+}
+
+/* 햄버거 버튼 - 데스크탑에선 숨김 */
+.mob-menu-btn{display:none;}
+
 /* 사업장/업무 트리 */
 .site-tree{padding:0 8px;}
 .site-node{margin-bottom:2px;}
@@ -254,7 +321,10 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
   </div>
   <div class="h-right">
     <span id="hdate" style="font-size:12px;color:#747683;font-variant-numeric:tabular-nums;margin-right:4px;"></span>
-    <button class="icon-btn"><span class="material-symbols-outlined" style="font-size:21px;">calendar_today</span></button>
+    <button class="mob-menu-btn" onclick="toggleMobileSidebar()">
+      <span class="material-symbols-outlined" style="font-size:18px;">menu</span>
+      사업장 선택
+    </button>
     <button class="icon-btn"><span class="material-symbols-outlined" style="font-size:21px;">notifications</span></button>
     <button class="icon-btn"><span class="material-symbols-outlined" style="font-size:21px;">account_circle</span></button>
   </div>
@@ -353,7 +423,7 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
     </div>
 
     <!-- 직원 조회 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;margin-bottom:8px;">
+    <div class="search-grid" style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;margin-bottom:8px;">
       <div>
         <label class="f-label">성명</label>
         <input type="text" id="sn_name" class="f-input" placeholder="홍길동" onkeydown="if(event.key==='Enter'){event.preventDefault();addRow()}"/>
@@ -371,7 +441,7 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
     <div class="lmsg" id="msgN"></div>
 
     <!-- 엑셀 붙여넣기 -->
-    <div class="sdiv"><span class="sdiv-lbl">엑셀 붙여넣기</span><span class="sdiv-note">A~N열 복사 후 아래에 붙여넣기 (Ctrl+V)</span></div>
+    <div class="sdiv paste-sdiv"><span class="sdiv-lbl">엑셀 붙여넣기</span><span class="sdiv-note">A~N열 복사 후 아래에 붙여넣기 (Ctrl+V)</span></div>
     <div class="paste-zone" id="pasteZone">
       <textarea id="pasteArea" rows="2" placeholder="엑셀에서 복사한 데이터를 여기에 붙여넣으세요 (Ctrl+V)&#10;사업장+업무 선택 후 붙여넣으면 해당 번호가 자동으로 매핑됩니다." onpaste="handlePaste(event)" oninput="if(this.value)processPasteText(this.value)"></textarea>
       <div class="paste-hint">
@@ -1355,6 +1425,10 @@ function setNavActive(el) {
 
 function toggleCfg() {
   document.getElementById('cfgPanel').classList.toggle('open');
+}
+
+function toggleMobileSidebar() {
+  document.querySelector('aside').classList.toggle('mob-open');
 }
 
 function toast(msg, type='info') {
