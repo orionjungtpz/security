@@ -721,11 +721,17 @@ function selectWork(work) {
   }
   updateSelBadge();
   updateTowerHeader();
-  // rawCells 있는 행들 번호 재매핑
+  // 번호 재매핑 (rawCells: 엑셀붙여넣기, allNums: 직원조회)
   const col = getTowerCol();
+  const key3 = `${curSite}__${curWork}`;
   rows.forEach(r => {
     if (r.rawCells && col !== null) {
       r.towerNo = r.rawCells[col] || '';
+    } else if (r.allNums) {
+      if (key3==='센터__관제') r.towerNo = r.allNums.센터;
+      else if (key3==='센터__식당') r.towerNo = r.allNums.센터식당;
+      else if (key3==='송도__통근버스'||key3==='송도__서울역 관제'||key3==='서울역__관제'||key3==='셔틀버스__셔틀버스') r.towerNo = r.allNums.서울역;
+      else r.towerNo = r.allNums.송도;
     }
   });
   if (rows.length > 0) renderTable();
@@ -935,7 +941,8 @@ async function addRow() {
           console.log('employee:', JSON.stringify(e));
           console.log('curSite:', curSite, 'curWork:', curWork, 'towerNo:', towerNo);
           console.log('e keys:', Object.keys(e), 'e.송도번호:', e['송도번호'], 'towerNo:', towerNo, 'curSite:', curSite, 'curWork:', curWork);
-          found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo,card:e.출입증||''};}}
+          found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo,card:e.출입증||'',
+            allNums:{송도:e.송도번호||'',센터:e.센터번호||'',서울역:e.서울역번호||'',센터식당:e.센터식당번호||''}};}}
     } else {
       await new Promise(r=>setTimeout(r,350));
       const d = DEMO.find(e=>(name&&empid)?(e.name===name&&e.empid===empid):name?e.name===name:e.empid===empid)||null;
