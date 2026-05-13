@@ -496,7 +496,7 @@ function getMailColumns() {
     '센터__관제':        ['출입증','사번','성명','부서','휴대폰','권한','센터번호','비고'],
     '센터__식당':        ['사번','성명','센터식당번호','구분','등록삭제'],
   };
-  return maps[key] ?? ['출입증','요청일','사번','성명','부서','휴대폰','번호'];
+  return maps[key] ?? ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'];
 }
 
 // ── 제목 생성 ──
@@ -540,15 +540,10 @@ function buildBody(regCount, delCount, date, card, tableHtml) {
     if (regCount > 0 && delCount > 0) action = '신규제작 및 삭제';
     else if (regCount > 0) action = '신규제작';
     else action = '삭제';
-    return `본 메일은 당사 출입증 AI Agent로 부터 자동발송되었습니다.
-문의사항 있으시면 담당자에게 (T.02-3457-4335) 연락부탁드립니다.
-
-안녕하세요, 포스코휴먼스 사원증 제작 담당자입니다.
-아래와 같이 포스코인터내셔널 출입증을 ${action}하여 정보 전달드리오니 업무에 참고부탁드립니다.
-
+    return `<p>본 메일은 당사 출입증 AI Agent로 부터 자동발송되었습니다.<br>문의사항 있으시면 담당자에게 (T.02-3457-4335) 연락부탁드립니다.</p>
+<p>안녕하세요, 포스코휴먼스 사원증 제작 담당자입니다.<br>아래와 같이 포스코인터내셔널 출입증을 ${action}하여 정보 전달드리오니 업무에 참고부탁드립니다.</p>
 ${tableHtml}
-
-감사합니다.`;
+<p>감사합니다.</p>`;
   }
 
   // 일반 본문
@@ -557,17 +552,10 @@ ${tableHtml}
   else if (regCount > 0) action = '등록';
   else action = '삭제';
   const sitework = `${curSite || ''} ${curWork || ''}`.trim();
-  return `본 메일은 당사 출입증 AI Agent로 부터 자동발송되었습니다.
-문의사항 있으시면 담당자에게 (${cfg.phone}) 연락부탁드립니다.
-
-안녕하세요, 포스코휴먼스 ${cfg.manager}입니다.
-
-아래 포스코인터내셔널 ${sitework} 권한 ${action}을 요청드립니다.
-완료 후 회신 부탁드립니다.
-
+  return `<p>본 메일은 당사 출입증 AI Agent로 부터 자동발송되었습니다.<br>문의사항 있으시면 담당자에게 (${cfg.phone}) 연락부탁드립니다.</p>
+<p>안녕하세요, 포스코휴먼스 ${cfg.manager}입니다.<br>아래 포스코인터내셔널 ${sitework} 권한 ${action}을 요청드립니다.<br>완료 후 회신 부탁드립니다.</p>
 ${tableHtml}
-
-감사합니다.`;
+<p>감사합니다.</p>`;
 }
 
 // ── HTML 표 생성 ──
@@ -592,7 +580,7 @@ function buildEmailTable(targetRows) {
         case '직급': case '권한': val = r.rank || ''; break;
         case '부서': val = r.dept || ''; break;
         case '휴대폰': val = r.phone || ''; break;
-        case '송도번호': case '서울역번호': case '셔틀버스번호': case '센터번호': case '센터식당번호': val = r.towerNo || ''; break;
+        case '송도번호': case '서울역번호': case '셔틀버스번호': case '센터번호': case '센터식당번호': case '번호': val = r.towerNo || ''; break;
         case '구분': val = '포스코인터내셔널'; break;
         case '등록삭제': val = r.type === 'reg' ? '등록' : '삭제'; break;
         case '비고': {
@@ -941,7 +929,8 @@ async function addRow() {
           console.log('employee:', JSON.stringify(e));
           console.log('curSite:', curSite, 'curWork:', curWork, 'towerNo:', towerNo);
           console.log('e keys:', Object.keys(e), 'e.송도번호:', e['송도번호'], 'towerNo:', towerNo, 'curSite:', curSite, 'curWork:', curWork);
-          found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo,card:e.출입증||'',
+          found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo,
+            cardType:e.출입증||'',
             allNums:{송도:e.송도번호||'',센터:e.센터번호||'',서울역:e.서울역번호||'',센터식당:e.센터식당번호||''}};}}
     } else {
       await new Promise(r=>setTimeout(r,350));
@@ -954,7 +943,7 @@ async function addRow() {
 
   const towerCol = getTowerCol();
   const newRow = found
-    ? {...found, type:'reg', card: document.getElementById('n_card').value, date: document.getElementById('n_date').value, note:''}
+    ? {...found, type:'reg', card: found.cardType || document.getElementById('n_card').value, date: document.getElementById('n_date').value, note:''}
     : {empid, name, engname:'', rank:'', dept:'', phone:'', towerNo:'', type:'reg', card: document.getElementById('n_card').value, date: document.getElementById('n_date').value, note:''};
 
   rows.push(newRow);
