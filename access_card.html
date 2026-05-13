@@ -911,7 +911,15 @@ async function addRow() {
   try {
     if (url) {
       const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({성명:name,사번:empid})});
-      if (res.ok){const d=await res.json();const r=d.result||d;if(r.found&&r.employee){const e=r.employee;found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo:e.타워No||''};}}
+      if (res.ok){const d=await res.json();const r=d.result||d;if(r.found&&r.employee){const e=r.employee;
+          const towerNo = curSite==='센터' ? (e.센터번호||'')
+            : (curSite==='서울역'||curWork==='셔틀버스') ? (e.서울역번호||'')
+            : curWork==='센터식당'||curWork==='식당' ? (e.센터식당번호||'')
+            : (e.송도번호||'');
+          console.log('employee:', JSON.stringify(e));
+          console.log('curSite:', curSite, 'curWork:', curWork, 'towerNo:', towerNo);
+          console.log('e keys:', Object.keys(e), 'e.송도번호:', e['송도번호'], 'towerNo:', towerNo, 'curSite:', curSite, 'curWork:', curWork);
+          found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo,card:e.출입증||''};}}
     } else {
       await new Promise(r=>setTimeout(r,350));
       const d = DEMO.find(e=>(name&&empid)?(e.name===name&&e.empid===empid):name?e.name===name:e.empid===empid)||null;
