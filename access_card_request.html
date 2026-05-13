@@ -1,1042 +1,1171 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>출입증 신청 관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
-:root {
-  --navy:#003087; --blue:#0051A2; --blue-light:#EBF3FF;
-  --red:#C0392B; --red-light:#FDECEA;
-  --green:#1A7A3C; --green-light:#E8F5ED;
-  --border:#D0DAE8; --bg:#F0F4FA; --card:#fff;
-  --text:#1A1F2E; --sub:#5A6480; --hint:#9BA5BE;
-  --radius:12px; --shadow:0 2px 16px rgba(0,48,135,.08);
-}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px;}
+body{font-family:'Noto Sans KR',sans-serif;background:#f4f3fb;color:#1a1b21;-webkit-font-smoothing:antialiased;}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#c4c6d4;border-radius:9999px;}
 
-header{background:var(--navy);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:200;box-shadow:0 3px 12px rgba(0,48,135,.3);}
-.hbrand{display:flex;align-items:center;gap:12px;}
-.hlogo{width:30px;height:30px;background:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--navy);}
-.htitle{font-size:15px;font-weight:700;}
-.hsub{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px;}
-.hdate{font-size:12px;color:rgba(255,255,255,.55);}
-.wrap{max-width:1020px;margin:0 auto;padding:24px 20px;}
+/* ── Layout ── */
+.app-header{background:#fff;border-bottom:1px solid #c4c6d4;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.app-body{display:flex;height:calc(100vh - 56px);}
+aside{width:280px;flex-shrink:0;display:flex;flex-direction:column;background:#f4f3fb;border-right:1px solid #c4c6d4;height:100%;overflow-y:auto;padding:16px 0;}
+main{flex:1;overflow-y:auto;padding:28px 32px;}
 
-/* Config */
-.cfg-row{display:flex;justify-content:flex-end;margin-bottom:12px;}
-.cfg-btn{background:var(--card);border:1.5px solid var(--border);border-radius:7px;padding:7px 14px;font-family:inherit;font-size:12px;color:var(--hint);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;}
-.cfg-btn:hover{border-color:var(--blue);color:var(--blue);}
-.cfg-panel{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:18px;box-shadow:var(--shadow);display:none;}
-.cfg-panel.open{display:block;}
-.cfg-panel h3{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:14px;}
-.cfg-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;}
-.cfg-f label{font-size:11px;font-weight:600;color:var(--hint);display:block;margin-bottom:5px;}
-.cfg-f .cfg-url-row{display:flex;gap:6px;}
-.cfg-f input{flex:1;border:1.5px solid var(--border);border-radius:6px;padding:8px 11px;font-family:inherit;font-size:12px;background:#FAFBFD;outline:none;}
-.cfg-f input:focus{border-color:var(--blue);}
-.btn-reload{border:none;background:var(--blue);color:#fff;border-radius:6px;padding:7px 12px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+/* ── Header ── */
+.h-title{font-size:17px;font-weight:700;color:#001d59;letter-spacing:-.01em;}
+.h-tabs{display:flex;gap:0;height:56px;align-items:flex-end;}
+.h-tab{font-size:13.5px;font-weight:500;color:#747683;padding:0 4px 10px;border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;margin-right:16px;background:none;border-top:none;border-left:none;border-right:none;font-family:'Noto Sans KR',sans-serif;}
+.h-tab.active{font-weight:700;color:#001d59;border-bottom-color:#001d59;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.icon-btn{background:none;border:none;cursor:pointer;padding:7px;border-radius:50%;transition:background .15s;color:#444652;}
+.icon-btn:hover{background:#eeedf5;}
 
-/* 사업장/업무 선택 패널 */
-.site-panel{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);border-bottom-left-radius:0;border-bottom-right-radius:0;overflow:hidden;margin-bottom:0;box-shadow:var(--shadow);}
-.site-panel-title{background:var(--navy);color:#fff;padding:11px 20px;font-size:12px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:8px;}
-.site-grid{display:grid;border-top:none;}
-.site-col{border-right:1px solid var(--border);padding:16px 18px;}
-.site-col:last-child{border-right:none;}
-.site-name-row{display:flex;align-items:center;gap:9px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
-.site-checkbox{width:17px;height:17px;cursor:pointer;accent-color:var(--navy);flex-shrink:0;}
-.site-name{font-size:14px;font-weight:700;cursor:pointer;user-select:none;}
-.site-icon{font-size:15px;}
-.work-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;padding-left:4px;}
-.work-item{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;transition:background .12s;opacity:.4;}
-.work-item.enabled{opacity:1;cursor:pointer;}
-.work-item.enabled:hover{background:#F0F4FA;}
-.work-item.selected{background:var(--blue-light);}
-.work-chk{width:15px;height:15px;accent-color:var(--blue);flex-shrink:0;}
-.work-chk:disabled{cursor:not-allowed;}
-.work-lbl{font-size:13px;color:var(--sub);user-select:none;}
-.work-item.enabled .work-lbl{color:var(--text);cursor:pointer;}
-.work-item.selected .work-lbl{color:var(--blue);font-weight:600;}
+/* ── Sidebar ── */
+.sb-brand{padding:0 20px 14px;border-bottom:1px solid #e3e2ea;margin-bottom:12px;}
+.sb-brand h2{font-size:16px;font-weight:900;color:#001d59;letter-spacing:-.02em;}
+.sb-brand p{font-size:11px;color:#747683;margin-top:2px;}
+.sb-section{padding:0 12px 14px;border-bottom:1px solid #e3e2ea;margin-bottom:4px;}
+.sb-label{display:flex;align-items:center;gap:6px;padding:0 4px;margin-bottom:6px;}
+.sb-label span.material-symbols-outlined{font-size:14px;color:#747683;}
+.sb-label span.txt{font-size:10px;font-weight:700;color:#747683;letter-spacing:.05em;text-transform:uppercase;}
 
-/* 요약 바 */
-.sel-summary{background:var(--navy);border:1.5px solid var(--navy);border-top:none;border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);min-height:50px;margin-bottom:20px;box-shadow:var(--shadow);overflow:hidden;}
-.sel-summary.empty{background:#F7F9FC;border-color:var(--border);}
-.ss-empty{padding:14px 20px;font-size:12px;color:var(--hint);text-align:center;}
-.ss-items{display:flex;flex-wrap:wrap;}
-.ss-item{padding:10px 20px;border-right:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;gap:3px;min-width:180px;}
-.ss-item:last-child{border-right:none;}
-.ss-site-name{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.6px;text-transform:uppercase;}
-.ss-works{font-size:13px;font-weight:700;color:#7EC8FF;}
-.ss-rcpt{font-size:11px;color:rgba(255,255,255,.55);margin-top:1px;}
-.ss-cc{font-size:11px;color:rgba(255,200,100,.7);margin-top:1px;}
+/* Site pill */
+.site-pill{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:600;border:none;background:transparent;color:#444652;cursor:pointer;transition:all .15s;text-align:left;font-family:'Noto Sans KR',sans-serif;}
+.site-pill:hover{background:#e8e7ef;color:#1a1b21;}
+.site-pill.active{background:#003087;color:#7f9df8;font-weight:700;}
+.site-pill .s-dot{width:8px;height:8px;border-radius:50%;background:#c4c6d4;flex-shrink:0;transition:background .15s;}
+.site-pill.active .s-dot{background:#7f9df8;}
 
-/* Tabs */
-.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;box-shadow:var(--shadow);}
-.tab{border:none;background:transparent;cursor:pointer;padding:14px 20px;font-family:inherit;font-size:14px;font-weight:500;color:var(--sub);display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
-.tab:first-child{border-right:1.5px solid var(--border);}
-.tab.on-new{background:var(--blue-light);color:var(--blue);font-weight:700;}
-.tab.on-del{background:var(--red-light);color:var(--red);font-weight:700;}
-.tbadge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;}
-.tab.on-new .tbadge{background:var(--blue);color:#fff;}
-.tab.on-del .tbadge{background:var(--red);color:#fff;}
-.tab:not(.on-new):not(.on-del) .tbadge{background:#E0E4EE;color:var(--hint);}
+/* Work checkbox */
+.work-chk-wrap{padding:0 4px;}
+.work-chk-all{display:flex;align-items:center;gap:7px;padding:6px 6px 8px;border-bottom:1px solid #e3e2ea;margin-bottom:4px;cursor:pointer;}
+.work-chk-all label{font-size:11px;font-weight:700;color:#444652;cursor:pointer;letter-spacing:.02em;}
+.work-chk-item{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:6px;cursor:pointer;transition:background .12s;}
+.work-chk-item:hover{background:#e8e7ef;}
+.work-chk-item label{font-size:12px;font-weight:600;color:#444652;cursor:pointer;flex:1;}
+.work-chk-item input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#001d59;flex-shrink:0;}
+.work-chk-item.checked label{color:#001d59;}
+
+/* Rcpt preview */
+.rcpt-preview{display:none;background:#eef4ff;border:1px solid #aac7ff;border-radius:8px;padding:8px 10px;margin-top:8px;flex-direction:column;gap:6px;}
+.rcpt-preview.show{display:flex;}
+.rcpt-item{display:flex;align-items:baseline;gap:6px;font-size:11px;}
+.rcpt-item .co{font-weight:700;color:#1d5daf;white-space:nowrap;min-width:60px;}
+.rcpt-item .em{color:#444652;word-break:break-all;}
+
+/* Nav item */
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;margin:2px 8px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;color:#444652;font-family:'Noto Sans KR',sans-serif;}
+.nav-item:hover{background:#e8e7ef;}
+.nav-item.active{background:#003087;color:#7f9df8;}
+
+/* System settings btn */
+.sys-btn{width:100%;background:#e8e7ef;border:none;border-radius:8px;padding:10px 12px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;color:#1a1b21;cursor:pointer;transition:background .15s;text-align:center;}
+.sys-btn:hover{background:#e3e2ea;}
+
+/* ── Main ── */
+.page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #c4c6d4;}
+.page-title{font-size:26px;font-weight:700;color:#1a1b21;letter-spacing:-.02em;}
+.page-sub{font-size:13px;color:#747683;margin-top:3px;}
+.sel-badge{font-size:11px;font-weight:700;background:#dbe1ff;color:#1c4197;padding:4px 12px;border-radius:9999px;display:none;}
+
+/* Config panel */
+.cfg-panel{max-height:0;overflow:hidden;transition:max-height .3s ease;}
+.cfg-panel.open{max-height:200px;}
+.cfg-card{background:#fff;border:1px solid #c4c6d4;border-radius:12px;padding:18px 22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
 
 /* Card */
-.card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
-.card-top{padding:16px 24px;border-bottom:1.5px solid var(--bg);display:flex;align-items:center;justify-content:space-between;}
-.card-top-left{display:flex;align-items:center;gap:12px;}
-.card-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
-.ci-new{background:var(--blue-light);} .ci-del{background:var(--red-light);}
-.card-title{font-size:15px;font-weight:700;}
-.card-desc{font-size:12px;color:var(--sub);margin-top:2px;}
-.card-body{padding:20px 24px;}
-.count-badge{font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;}
-.cb-new{background:var(--blue-light);color:var(--blue);}
-.cb-del{background:var(--red-light);color:var(--red);}
+.card{background:#fff;border:1px solid #c4c6d4;border-radius:12px;padding:20px 24px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #e8e7ef;}
+.card-title{font-size:18px;font-weight:700;color:#1a1b21;letter-spacing:-.01em;}
 
-/* Search */
-.search-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:13px 16px;margin-bottom:12px;}
-.sf label{font-size:11px;font-weight:600;color:var(--sub);display:block;margin-bottom:5px;}
-.sf input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13.5px;background:#fff;outline:none;transition:border-color .2s,box-shadow .2s;}
-.sf input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,81,162,.1);}
-.del-panel .sf input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(192,57,43,.1);}
-.btn-lookup{border:none;border-radius:8px;height:40px;padding:0 20px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;white-space:nowrap;}
-.bl-new{background:var(--blue);color:#fff;} .bl-new:hover{background:#0044AA;transform:translateY(-1px);}
-.bl-del{background:var(--red);color:#fff;} .bl-del:hover{background:#A93226;transform:translateY(-1px);}
-.btn-lookup:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
-.lookup-msg{font-size:12px;padding:6px 12px;border-radius:6px;margin-bottom:12px;display:none;}
-.name-preview{font-size:12px;color:var(--blue);font-weight:600;padding:5px 0 0 2px;display:none;}
-.del-panel .name-preview{color:var(--red);}
-.lookup-msg.show{display:block;}
-.lm-ok{background:var(--green-light);color:var(--green);border:1px solid #C8E6D3;}
-.lm-no{background:#FFF8E1;color:#B8860B;border:1px solid #FFE08A;}
-.lm-dup{background:#FFF0F8;color:#8B0057;border:1px solid #F0C8E0;}
+/* Form */
+.f-label{display:block;font-size:11px;font-weight:700;color:#444652;margin-bottom:5px;letter-spacing:.02em;}
+.f-input{width:100%;border:1px solid #c4c6d4;border-radius:8px;padding:8px 12px;font-family:'Noto Sans KR',sans-serif;font-size:13.5px;color:#1a1b21;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;}
+.f-input:focus{border-color:#1d5daf;box-shadow:0 0 0 3px rgba(29,93,175,.12);}
+.f-input::placeholder{color:#b0b4c4;}
+select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23747683' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer;}
 
-/* 공통설정 */
-.common-row{display:grid;gap:12px;margin-bottom:16px;}
-.cr-new{grid-template-columns:1fr 1fr 1fr;}
-.cr-del{grid-template-columns:1fr 1fr 1fr 1fr;}
-.c-field label{font-size:11px;font-weight:600;color:var(--sub);display:block;margin-bottom:5px;}
-.c-field label .req{color:#E53935;margin-left:2px;}
-.c-field select,.c-field input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13.5px;color:var(--text);background:#FAFBFD;outline:none;-webkit-appearance:none;}
-.c-field select:focus,.c-field input:focus{border-color:var(--blue);}
-.del-panel .c-field select:focus,.del-panel .c-field input:focus{border-color:var(--red);}
-
-/* Divider */
-.divider{font-size:11px;font-weight:700;color:var(--hint);letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin:16px 0 12px;}
-.divider::after{content:'';flex:1;height:1px;background:var(--border);}
-.divider-note{font-weight:400;font-size:10px;color:var(--hint);text-transform:none;letter-spacing:0;}
+/* Paste area */
+.paste-zone{border:2px dashed #c4c6d4;border-radius:10px;padding:14px 16px;background:#fafbff;transition:all .15s;margin-bottom:12px;cursor:text;}
+.paste-zone:focus-within,.paste-zone.drag{border-color:#1d5daf;background:#f0f5ff;}
+.paste-zone textarea{width:100%;border:none;background:transparent;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#1a1b21;outline:none;resize:none;min-height:36px;line-height:1.5;}
+.paste-zone textarea::placeholder{color:#b0b4c4;}
+.paste-hint{font-size:11px;color:#b0b4c4;margin-top:4px;display:flex;align-items:center;gap:4px;}
 
 /* Table */
-.tbl-wrap{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;overflow-x:auto;}
-.tbl-wrap table{width:100%;border-collapse:collapse;font-size:13px;min-width:860px;}
-.tbl-wrap thead tr{background:var(--navy);color:#fff;}
-.tbl-wrap thead th{padding:9px 10px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap;}
-.tbl-wrap thead th:first-child{width:32px;text-align:center;}
-.tbl-wrap thead th:last-child{width:36px;text-align:center;}
-.tbl-wrap tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
-.tbl-wrap tbody tr:last-child{border-bottom:none;}
-.tbl-wrap tbody tr:hover{background:#F8FAFF;}
-.tbl-wrap tbody td{padding:0;vertical-align:middle;}
-.tbl-wrap tbody td:first-child{text-align:center;color:var(--hint);font-size:12px;font-weight:600;padding:0 10px;}
-.tbl-wrap tbody td:last-child{text-align:center;padding:0 4px;}
-.cell-input{width:100%;border:none;background:transparent;padding:9px 10px;font-family:inherit;font-size:13px;color:var(--text);outline:none;}
-.cell-input:focus{background:#F0F7FF;}
-.del-panel .cell-input:focus{background:#FFF5F5;}
-.cell-input::placeholder{color:var(--hint);}
-.cell-input.af{color:var(--blue);font-weight:500;}
-.del-panel .cell-input.af{color:var(--red);}
-.cell-select{width:100%;border:none;background:transparent;padding:9px 6px;font-family:inherit;font-size:13px;color:var(--text);outline:none;cursor:pointer;-webkit-appearance:none;}
-.cell-select:focus{background:#F0F7FF;}
-.tbl-empty{padding:28px;text-align:center;color:var(--hint);font-size:13px;}
-.btn-row-del{background:none;border:none;cursor:pointer;color:var(--hint);font-size:15px;padding:4px 5px;border-radius:4px;transition:all .15s;}
-.btn-row-del:hover{color:var(--red);background:var(--red-light);}
+.tbl-wrap{border:1px solid #c4c6d4;border-radius:10px;overflow:hidden;margin-bottom:16px;overflow-x:auto;}
+.data-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.data-tbl thead tr{background:#001d59;}
+.data-tbl thead th{padding:10px 10px;text-align:left;color:rgba(255,255,255,.8);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;}
+.data-tbl thead th:first-child{width:36px;text-align:center;}
+.data-tbl thead th:last-child{width:44px;text-align:center;}
+.data-tbl tbody tr{border-bottom:1px solid #e8e7ef;transition:background .12s;}
+.data-tbl tbody tr:last-child{border-bottom:none;}
+.data-tbl tbody tr:hover{background:#f8faff;}
+.data-tbl tbody td{padding:0;vertical-align:middle;}
+.data-tbl tbody td:first-child{text-align:center;color:#b0b4c4;font-size:11px;font-weight:700;padding:0 10px;}
+.data-tbl tbody td:last-child{text-align:center;padding:0 6px;}
+.cell-in{width:100%;border:none;background:transparent;padding:9px 10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#1a1b21;outline:none;transition:background .12s;}
+.cell-in:focus{background:#eef4ff;}
+.cell-in::placeholder{color:#b0b4c4;}
+.cell-in.filled{color:#1d5daf;font-weight:500;}
+.cell-sel{width:100%;border:none;background:transparent;padding:9px 6px;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#1a1b21;outline:none;cursor:pointer;-webkit-appearance:none;}
+.cell-sel:focus{background:#eef4ff;}
+/* 등록/삭제 드롭다운 색상 */
+.type-reg{color:#1a7a3c;font-weight:700;}
+.type-del{color:#ba1a1a;font-weight:700;}
+.tbl-empty{text-align:center;padding:36px;color:#b0b4c4;font-size:13px;}
+.btn-row-del{background:none;border:none;cursor:pointer;color:#b0b4c4;padding:5px 7px;border-radius:5px;transition:all .12s;font-size:13px;}
+.btn-row-del:hover{color:#ba1a1a;background:#ffdad6;}
 
-/* 수신자 */
-.rcpt-box{background:#F7F9FC;border:1.5px solid var(--border);border-radius:8px;padding:12px 16px;}
-.rcpt-lbl{font-size:11px;font-weight:600;color:var(--sub);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+/* Recipient box */
+.rcpt-box{background:#f4f3fb;border:1px solid #c4c6d4;border-radius:8px;padding:12px 14px;margin-bottom:18px;}
+.rcpt-box-label{font-size:11px;font-weight:700;color:#444652;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .rcpt-list{display:flex;flex-wrap:wrap;gap:6px;}
-.rtag{display:flex;align-items:center;gap:5px;background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:4px 9px 4px 8px;}
-.rtag.auto{border-color:#A8C8F0;background:var(--blue-light);}
-.rtlbl{font-size:9px;font-weight:800;color:var(--hint);background:var(--bg);border-radius:3px;padding:1px 4px;}
-.rtag.auto .rtlbl{color:var(--blue);background:#D8ECFF;}
-.rtag input[type=email]{border:none;background:transparent;font-family:inherit;font-size:12px;color:var(--text);outline:none;width:170px;padding:0;}
-.rtag-rm{background:none;border:none;cursor:pointer;color:var(--hint);font-size:13px;padding:0 2px;transition:color .15s;}
-.rtag-rm:hover{color:var(--red);}
-.rtag-add{background:transparent;border:1.5px dashed var(--border);border-radius:20px;padding:4px 12px;font-family:inherit;font-size:12px;color:var(--hint);cursor:pointer;transition:all .15s;}
-.rtag-add:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light);}
-.btn-rcpt-clear{background:transparent;border:none;font-family:inherit;font-size:11px;color:var(--hint);cursor:pointer;padding:2px 6px;border-radius:4px;}
-.btn-rcpt-clear:hover{color:var(--red);background:var(--red-light);}
+.rtag{display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #c4c6d4;border-radius:9999px;padding:4px 10px;}
+.rtag.auto{border-color:#aac7ff;background:#f0f5ff;}
+.rtag .rlbl{font-size:9px;font-weight:800;color:#1d5daf;background:#dbe1ff;border-radius:3px;padding:1px 4px;}
+.rtag input[type=email]{border:none;background:transparent;font-family:'Noto Sans KR',sans-serif;font-size:12px;color:#1a1b21;outline:none;width:170px;}
+.rtag-add-btn{display:flex;align-items:center;gap:4px;padding:4px 12px;border-radius:9999px;border:1.5px dashed #c4c6d4;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:600;color:#747683;background:transparent;cursor:pointer;transition:all .15s;}
+.rtag-add-btn:hover{border-color:#1d5daf;color:#1d5daf;background:#f0f5ff;}
+.rtag-rm{background:none;border:none;cursor:pointer;color:#b0b4c4;font-size:14px;line-height:1;padding:0 1px;transition:color .12s;}
+.rtag-rm:hover{color:#ba1a1a;}
+.rcpt-clear-btn{background:none;border:none;font-family:'Noto Sans KR',sans-serif;font-size:11px;color:#b0b4c4;cursor:pointer;transition:color .12s;}
+.rcpt-clear-btn:hover{color:#ba1a1a;}
+
+/* Buttons */
+.btn-primary{background:#001d59;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,transform .1s;}
+.btn-primary:hover{background:#003087;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-outline{background:#fff;color:#1a1b21;border:1px solid #c4c6d4;border-radius:8px;padding:9px 18px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s;}
+.btn-outline:hover{background:#eeedf5;}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px;}
+
+/* Summary chips */
+.sum-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.chip{font-size:12px;font-weight:700;padding:4px 12px;border-radius:9999px;}
+.chip-reg{background:#eaf5ed;color:#1a7a3c;}
+.chip-del{background:#ffdad6;color:#93000a;}
+.chip-total{background:#dbe1ff;color:#1c4197;}
+
+/* Section divider */
+.sdiv{display:flex;align-items:center;gap:10px;margin:16px 0 10px;}
+.sdiv-lbl{font-size:10px;font-weight:700;color:#b0b4c4;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;}
+.sdiv-note{font-size:10px;color:#b0b4c4;}
+.sdiv::after{content:'';flex:1;height:1px;background:#e8e7ef;}
+
+/* Lookup msg */
+.lmsg{font-size:12px;padding:7px 12px;border-radius:6px;display:none;margin-bottom:10px;}
+.lmsg.show{display:block;}
+.lmsg-ok{background:#eaf5ed;color:#1a7a3c;border:1px solid #c0dfc9;}
+.lmsg-no{background:#fffbec;color:#9a6a00;border:1px solid #f7e08a;}
+.lmsg-warn{background:#fff3e0;color:#e65100;border:1px solid #ffcc80;}
 
 /* Actions */
-.actions{display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1.5px solid var(--bg);margin-top:16px;}
-.actions-left{font-size:12px;color:var(--hint);}
-.actions-right{display:flex;gap:10px;}
-.btn-reset{background:transparent;border:1.5px solid var(--border);border-radius:8px;padding:9px 16px;font-family:inherit;font-size:13px;font-weight:500;color:var(--sub);cursor:pointer;transition:all .15s;}
-.btn-reset:hover{border-color:var(--sub);color:var(--text);}
-.btn-submit{border:none;border-radius:8px;padding:9px 24px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;}
-.bs-new{background:var(--blue);color:#fff;} .bs-new:hover{background:#0044AA;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,81,162,.28);}
-.bs-del{background:var(--red);color:#fff;} .bs-del:hover{background:#A93226;transform:translateY(-1px);}
+.actions{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #e8e7ef;}
+.actions-info{font-size:12px;color:#b0b4c4;}
 
-.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+/* Toast */
+.toast-wrap{position:fixed;top:18px;right:18px;display:flex;flex-direction:column;gap:7px;z-index:9999;pointer-events:none;}
+.toast{background:#fff;border:1px solid #c4c6d4;border-left-width:4px;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:500;color:#1a1b21;box-shadow:0 8px 24px rgba(0,0,0,.1);max-width:360px;opacity:0;transform:translateX(12px);transition:all .22s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(0);}
+.toast.t-ok{border-left-color:#1a7a3c;}
+.toast.t-err{border-left-color:#ba1a1a;}
+.toast.t-warn{border-left-color:#e65100;}
+.toast.t-info{border-left-color:#1d5daf;}
+
+/* Spinner */
+.spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);padding:11px 20px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:0 8px 28px rgba(0,0,0,.18);opacity:0;transition:all .28s;pointer-events:none;z-index:9999;white-space:nowrap;}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-.t-info{background:#1A1F2E;color:#fff;} .t-ok{background:#1A7A3C;color:#fff;} .t-err{background:#7B1A1A;color:#fff;} .t-warn{background:#7A5A00;color:#fff;}
-
-@media(max-width:700px){
-  .site-grid{grid-template-columns:1fr!important;}
-  .site-col{border-right:none;border-bottom:1px solid var(--border);}
-  .cfg-grid{grid-template-columns:1fr 1fr;}
-  .cr-new,.cr-del{grid-template-columns:1fr 1fr;}
-  .search-row{grid-template-columns:1fr 1fr;}
-  .btn-lookup{grid-column:1/-1;width:100%;justify-content:center;}
-}
 </style>
 </head>
 <body>
-<header>
-  <div class="hbrand">
-    <div class="hlogo">PSCI</div>
-    <div><div class="htitle">출입증 신청 관리</div><div class="hsub">포스코타워 송도 · 행정지원그룹</div></div>
+
+<!-- ══ HEADER ══ -->
+<header class="app-header">
+  <div style="display:flex;align-items:center;gap:20px;">
+    <span class="h-title">출입증 신청 관리</span>
+    <nav class="h-tabs">
+      <button class="h-tab active" id="tabMain" onclick="/* single view */">신청 관리</button>
+    </nav>
   </div>
-  <div class="hdate" id="hdate"></div>
+  <div class="h-right">
+    <span id="hdate" style="font-size:12px;color:#747683;font-variant-numeric:tabular-nums;margin-right:4px;"></span>
+    <button class="icon-btn"><span class="material-symbols-outlined" style="font-size:21px;">calendar_today</span></button>
+    <button class="icon-btn"><span class="material-symbols-outlined" style="font-size:21px;">notifications</span></button>
+    <button class="icon-btn"><span class="material-symbols-outlined" style="font-size:21px;">account_circle</span></button>
+  </div>
 </header>
 
-<div class="wrap">
-  <div class="cfg-row"><button class="cfg-btn" onclick="toggleCfg()">⚙️ Flow URL 설정</button></div>
+<div class="app-body">
+
+<!-- ══ SIDEBAR ══ -->
+<aside>
+  <div class="sb-brand">
+    <h2>포스코타워 송도</h2>
+    <p>행정지원그룹</p>
+  </div>
+
+  <!-- 사업장 -->
+  <div class="sb-section">
+    <div class="sb-label">
+      <span class="material-symbols-outlined">location_on</span>
+      <span class="txt">사업장</span>
+    </div>
+    <div id="siteRow">
+      <span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">⏳ 불러오는 중...</span>
+    </div>
+  </div>
+
+  <!-- 업무 -->
+  <div class="sb-section">
+    <div class="sb-label">
+      <span class="material-symbols-outlined">category</span>
+      <span class="txt">업무</span>
+    </div>
+    <div id="workRow">
+      <span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">사업장을 먼저 선택하세요</span>
+    </div>
+  </div>
+
+  <!-- 수신자 미리보기 -->
+  <div class="sb-section" id="rcptPreviewWrap" style="display:none;">
+    <div class="sb-label">
+      <span class="material-symbols-outlined">mail</span>
+      <span class="txt">자동 수신자</span>
+    </div>
+    <div class="rcpt-preview show" id="rcptPreview"></div>
+  </div>
+
+  <nav style="flex:1;padding:4px 0;">
+    <div class="nav-item active" onclick="focusLookup();setNavActive(this)">
+      <span class="material-symbols-outlined" style="font-size:20px;">person_search</span>
+      직원 조회
+    </div>
+  </nav>
+
+  <div style="padding:12px 8px 0;">
+    <button class="sys-btn" onclick="toggleCfg()">
+      <span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;margin-right:4px;">settings</span>
+      시스템 설정
+    </button>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main>
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">출입증 신청 관리</div>
+      <div class="page-sub">포스코타워 송도 · 행정지원그룹</div>
+    </div>
+    <span class="sel-badge" id="selBadge"></span>
+  </div>
+
+  <!-- Config panel -->
   <div class="cfg-panel" id="cfgPanel">
-    <h3>⚙️ POWER AUTOMATE FLOW URL</h3>
-    <div class="cfg-grid">
-      <div class="cfg-f">
-        <label>📧 수신자 목록 Flow URL</label>
-        <div class="cfg-url-row">
-          <input type="url" id="cfgRecipients" placeholder="https://prod-xx.logic.azure.com/..."/>
-          <button class="btn-reload" onclick="loadRecipients()">↺ 재로드</button>
+    <div class="cfg-card">
+      <div style="font-size:11px;font-weight:700;color:#747683;letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px;">Power Automate Flow URL 설정</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label class="f-label">수신자 목록 Flow URL <span style="color:#ba1a1a;">*</span></label>
+          <div style="display:flex;gap:6px;">
+            <input type="url" id="cfgRecipients" class="f-input" style="font-size:11px;" value="https://defaultb9501effd05e4bf18a87898d83f46c.eb.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/db3898d903624eee9c5058faa7a147b7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xHNnOezb-HslBCRsG4Gb4gFuBsb41wBwqGphpNuOtFQ" placeholder="https://prod-xx.logic.azure.com/..."/>
+            <button onclick="loadRecipients()" class="btn-primary btn-sm">↺ 재로드</button>
+          </div>
+        </div>
+        <div>
+          <label class="f-label">직원조회 Flow URL</label>
+          <input type="url" id="cfgLookup" class="f-input" style="font-size:11px;" value="https://defaultb9501effd05e4bf18a87898d83f46c.eb.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/238e8facb604477b9ecc956296833338/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=m5iEPHta3JBe7KHHi-hJbare8TY5aqqydEsYr2ZmyMc"/>
+        </div>
+        <div>
+          <label class="f-label">제출 Flow URL</label>
+          <input type="url" id="cfgSubmit" class="f-input" style="font-size:11px;" value="https://defaultb9501effd05e4bf18a87898d83f46c.eb.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ad9a662905c148148774d008b58b421a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=aLpibUTUcXj4ks_o8Z9usjv22JaT68w2cFYCD3lexhA" placeholder="https://prod-xx.logic.azure.com/..."/>
         </div>
       </div>
-      <div class="cfg-f"><label>🔍 직원조회 Flow URL</label>
-        <input type="url" id="cfgLookup" value="https://defaultb9501effd05e4bf18a87898d83f46c.eb.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/238e8facb604477b9ecc956296833338/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=m5iEPHta3JBe7KHHi-hJbare8TY5aqqydEsYr2ZmyMc"/>
-      </div>
-      <div class="cfg-f"><label>🟦 신규등록 제출 Flow URL</label><input type="url" id="cfgNew" value="https://defaultb9501effd05e4bf18a87898d83f46c.eb.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ad9a662905c148148774d008b58b421a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=aLpibUTUcXj4ks_o8Z9usjv22JaT68w2cFYCD3lexhA"/></div>
-      <div class="cfg-f"><label>🟥 삭제요청 제출 Flow URL</label><input type="url" id="cfgDel" placeholder="https://prod-xx.logic.azure.com/..."/></div>
     </div>
   </div>
 
-  <!-- 사업장/업무 선택 -->
-  <div class="site-panel">
-    <div class="site-panel-title">📍 사업장 &amp; 업무 선택 <span style="font-weight:400;font-size:10px;opacity:.6;margin-left:4px">— 사업장별로 업무 복수 선택 가능</span></div>
-    <div class="site-grid" id="siteGrid">
-      <div style="padding:20px;color:var(--hint);font-size:13px">⏳ 불러오는 중...</div>
-    </div>
-  </div>
-
-  <!-- 선택 요약 바 -->
-  <div class="sel-summary empty" id="selSummary">
-    <div class="ss-empty">← 사업장 체크 후 업무를 선택해주세요</div>
-  </div>
-
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab on-new" id="tabNew" onclick="switchTab('new')"><span>🪪</span><span>신규 등록</span><span class="tbadge">NEW</span></button>
-    <button class="tab" id="tabDel" onclick="switchTab('del')"><span>🗑️</span><span>삭제 요청</span><span class="tbadge">DEL</span></button>
-  </div>
-
-  <!-- 신규등록 -->
-  <div id="pNew">
+  <!-- 신청 카드 -->
   <div class="card">
-    <div class="card-top">
-      <div class="card-top-left">
-        <div class="card-icon ci-new">🪪</div>
-        <div><div class="card-title">출입증 신규 등록 신청</div><div class="card-desc">조회 후 테이블에 추가 → 일괄 전송</div></div>
+    <div class="card-header">
+      <span class="card-title">출입증 신청</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="chip chip-reg" id="cntReg" style="display:none;"></span>
+        <span class="chip chip-del" id="cntDel" style="display:none;"></span>
+        <span class="chip chip-total" id="cntTotal">0명</span>
       </div>
-      <span class="count-badge cb-new" id="cntNew">0명</span>
     </div>
-    <div class="card-body">
-      <div class="search-row">
-        <div class="sf">
-          <label>사번</label>
-          <input type="text" id="sn_empid" placeholder="사번 입력 또는 여러 셀 붙여넣기" onkeydown="if(event.key==='Enter')addRow('new')" onpaste="handlePaste(event,'new')" style="width:100%"/>
-          <div class="name-preview" id="npN"></div>
-        </div>
-        <button class="btn-lookup bl-new" id="btnAN" onclick="addRow('new')">
-          <div class="spinner" id="spN"></div><span id="spNTxt">+ 추가</span>
+
+    <!-- 직원 조회 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;margin-bottom:8px;">
+      <div>
+        <label class="f-label">성명</label>
+        <input type="text" id="sn_name" class="f-input" placeholder="홍길동" onkeydown="if(event.key==='Enter')addRow()"/>
+      </div>
+      <div>
+        <label class="f-label">사번</label>
+        <input type="text" id="sn_empid" class="f-input" placeholder="12345678" onkeydown="if(event.key==='Enter')addRow()"/>
+      </div>
+      <button class="btn-primary" id="btnAdd" onclick="addRow()" style="height:40px;padding:0 18px;align-self:flex-end;">
+        <div class="spinner" id="spN"></div>
+        <span class="material-symbols-outlined" id="spNIco" style="font-size:17px;">add</span>
+        <span id="spNTxt">추가</span>
+      </button>
+    </div>
+    <div class="lmsg" id="msgN"></div>
+
+    <!-- 엑셀 붙여넣기 -->
+    <div class="sdiv"><span class="sdiv-lbl">엑셀 붙여넣기</span><span class="sdiv-note">A~N열 복사 후 아래에 붙여넣기 (Ctrl+V)</span></div>
+    <div class="paste-zone" id="pasteZone">
+      <textarea id="pasteArea" rows="2" placeholder="엑셀에서 복사한 데이터를 여기에 붙여넣으세요 (Ctrl+V)&#10;사업장+업무 선택 후 붙여넣으면 해당 번호가 자동으로 매핑됩니다." onpaste="handlePaste(event)" oninput="if(this.value)processPasteText(this.value)"></textarea>
+      <div class="paste-hint">
+        <span class="material-symbols-outlined" style="font-size:13px;">info</span>
+        열 순서: No. / 요청일 / 출입증 / 사번 / 성명 / 영문이름 / 구분 / 부서 / 휴대폰 / 송도번호 / 센터번호 / 셔틀버스·서울역번호 / 센터식당번호 / 비고
+      </div>
+    </div>
+
+    <!-- 공통 설정 -->
+    <div class="sdiv"><span class="sdiv-lbl">공통 설정</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div>
+        <label class="f-label">요청일 <span style="color:#ba1a1a;">*</span></label>
+        <input type="date" id="n_date" class="f-input"/>
+      </div>
+      <div>
+        <input type="hidden" id="n_card" value=""/>
+      </div>
+      <div>
+        <label class="f-label">비고</label>
+        <input type="text" id="n_note" class="f-input" placeholder="특이사항 (선택)"/>
+      </div>
+    </div>
+
+    <!-- 인원 테이블 -->
+    <div class="sdiv"><span class="sdiv-lbl">신청 인원</span><span class="sdiv-note">셀 직접 수정 가능 · 등록/삭제 드롭다운으로 구분</span></div>
+    <div class="tbl-wrap">
+      <table class="data-tbl">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>구분</th>
+            <th>등록/삭제</th>
+            <th>사번</th>
+            <th>성명</th>
+            <th>영문이름</th>
+            <th>직급</th>
+            <th>부서</th>
+            <th>휴대폰</th>
+            <th id="thTowerNo">번호</th>
+            <th>비고</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbodyMain">
+          <tr><td colspan="12">
+            <div class="tbl-empty">
+              <span class="material-symbols-outlined" style="font-size:28px;display:block;margin:0 auto 8px;opacity:.35;">person_search</span>
+              직원 조회 또는 엑셀 붙여넣기로 인원을 추가하세요
+            </div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 메일 수신자 -->
+    <div class="sdiv"><span class="sdiv-lbl">메일 수신자</span></div>
+    <div class="rcpt-box">
+      <div class="rcpt-box-label">
+        <span style="display:flex;align-items:center;gap:5px;"><span class="material-symbols-outlined" style="font-size:14px;">mail</span> 수신자 목록</span>
+        <button class="rcpt-clear-btn" onclick="clearRcpt('rcptMain')">초기화</button>
+      </div>
+      <div class="rcpt-list" id="rcptMain">
+        <button class="rtag-add-btn" onclick="addRcpt('rcptMain')">
+          <span class="material-symbols-outlined" style="font-size:13px;">add</span> 직접 추가
         </button>
       </div>
-      <div class="lookup-msg" id="msgN"></div>
-      <div class="divider">신청 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
-      <div class="tbl-wrap"><table>
-        <thead id="theadNew"><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th class="col-num col-송도번호">송도 No.</th><th class="col-num col-센터번호" style="display:none">센터 No.</th><th class="col-num col-센터식당번호" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr></thead>
-        <tbody id="tbodyNew"><tr><td colspan="11"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
-      </table></div>
-      <div class="divider">메일 수신자</div>
-      <div class="rcpt-box">
-        <div class="rcpt-lbl">📧 수신자 목록 <button class="btn-rcpt-clear" onclick="clearRcpt('rcptN')">초기화</button></div>
-        <div class="rcpt-list" id="rcptN"><button class="rtag-add" onclick="addRcpt('rcptN')">+ 직접 추가</button></div>
-      </div>
-      <div class="actions">
-        <div class="actions-left" id="actLN">인원을 추가한 후 전송하세요</div>
-        <div class="actions-right">
-          <button class="btn-reset" onclick="resetAll('new')">전체 초기화</button>
-          <button class="btn-submit bs-new" onclick="submitForm('new')">📤 신규등록 전송</button>
-        </div>
-      </div>
     </div>
-  </div>
-  </div>
 
-  <!-- 삭제요청 -->
-  <div id="pDel" style="display:none" class="del-panel">
-  <div class="card">
-    <div class="card-top">
-      <div class="card-top-left">
-        <div class="card-icon ci-del">🗑️</div>
-        <div><div class="card-title">출입증 삭제 요청</div><div class="card-desc">조회 후 테이블에 추가 → 일괄 전송</div></div>
-      </div>
-      <span class="count-badge cb-del" id="cntDel">0명</span>
-    </div>
-    <div class="card-body">
-      <div class="search-row">
-        <div class="sf">
-          <label>사번</label>
-          <input type="text" id="sd_empid" placeholder="사번 입력 또는 여러 셀 붙여넣기" onkeydown="if(event.key==='Enter')addRow('del')" onpaste="handlePaste(event,'del')" style="width:100%"/>
-          <div class="name-preview" id="npD"></div>
-        </div>
-        <button class="btn-lookup bl-del" id="btnAD" onclick="addRow('del')">
-          <div class="spinner" id="spD"></div><span id="spDTxt">+ 추가</span>
+    <!-- Actions -->
+    <div class="actions">
+      <span class="actions-info" id="actInfo">인원을 추가한 후 전송하세요</span>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-outline" onclick="resetAll()">전체 초기화</button>
+        <button class="btn-primary" onclick="submitForm()">
+          <span class="material-symbols-outlined" style="font-size:15px;">send</span>
+          전송
         </button>
       </div>
-      <div class="lookup-msg" id="msgD"></div>
-      <div style="margin-bottom:14px"><label style="font-size:11px;font-weight:600;color:var(--sub);display:block;margin-bottom:5px">삭제 사유 <span style="color:#E53935">*</span></label>
-        <select id="d_reason" style="border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13.5px;background:#FAFBFD;outline:none;-webkit-appearance:none;width:200px"><option value="">선택</option><option>분실</option><option>퇴사</option><option>재발급(구카드 삭제)</option><option>기타</option></select>
-      </div>
-      <div class="divider">삭제 인원 <span class="divider-note">셀 클릭 시 직접 수정 가능</span></div>
-      <div class="tbl-wrap"><table>
-        <thead id="theadDel"><tr><th>#</th><th>출입증</th><th>직급</th><th>사번</th><th>성명</th><th>영문이름</th><th>부문</th><th>부서</th><th>휴대폰</th><th class="col-num col-송도번호">송도 No.</th><th class="col-num col-센터번호" style="display:none">센터 No.</th><th class="col-num col-센터식당번호" style="display:none">센터식당 No.</th><th>비고</th><th></th></tr></thead>
-        <tbody id="tbodyDel"><tr><td colspan="11"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr></tbody>
-      </table></div>
-      <div class="divider">메일 수신자</div>
-      <div class="rcpt-box">
-        <div class="rcpt-lbl">📧 수신자 목록 <button class="btn-rcpt-clear" onclick="clearRcpt('rcptD')">초기화</button></div>
-        <div class="rcpt-list" id="rcptD"><button class="rtag-add" onclick="addRcpt('rcptD')">+ 직접 추가</button></div>
-      </div>
-      <div class="actions">
-        <div class="actions-left" id="actLD">인원을 추가한 후 전송하세요</div>
-        <div class="actions-right">
-          <button class="btn-reset" onclick="resetAll('del')">전체 초기화</button>
-          <button class="btn-submit bs-del" onclick="submitForm('del')">📤 삭제요청 전송</button>
-        </div>
-      </div>
     </div>
   </div>
-  </div>
+
+</main>
 </div>
-<div class="toast" id="toast"></div>
+
+<div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// ── SITE_CONFIG: { 사업장: { 업무: { emails:[], numCol:'' } } }
-// SITE_CONFIG: SharePoint List에서 로드 (이메일 코드 노출 방지)
-// List 컬럼: 사업장, 업무, 수신자이메일, CC이메일, 번호컬럼
-// 로드 전까지는 사업장/업무 구조만 유지 (이메일 없음)
-let SITE_CONFIG = {
-  '송도': {
-    '관제':           { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
-    '통근버스':       { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
-    '9층 카페':       { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
-    '9층 회의실':     { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
-    '근태':           { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
-    '12층 식당/카페': { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
-    '서울역 관제':    { emails:[], cc:[], names:[], ccNames:[], numCol:'송도번호' },
-  },
-  '센터': {
-    '식당': { emails:[], cc:[], names:[], ccNames:[], numCol:'센터식당번호' },
-    '관제': { emails:[], cc:[], names:[], ccNames:[], numCol:'센터번호' },
-  },
-};
+// ══════════════════════════════════════════
+//  CONFIG & STATE
+// ══════════════════════════════════════════
+let SITE_CONFIG = {};   // { 사업장: { 업무: [{업체명, 이메일}] } }
+let curSite = null;
+let selectedWorks = new Set(); // 선택된 업무 목록
+let rows = [];          // 인원 목록
+let rawPasteRows = [];  // 엑셀 원본 데이터 (재매핑용)
 
-const SITE_ICONS  = {'송도':'🏢','센터':'🏭'};
-const WORK_ICONS  = {'관제':'🎛️','통근버스':'🚌','9층 카페':'☕','9층 회의실':'🪑','근태':'🕐','12층 식당/카페':'🍽️','식당':'🍱','비상승강기':'🛗','서울역 관제':'🏙️'};
-const NUM_LABELS  = {'송도번호':'송도 No.','센터번호':'센터 No.','서울역번호':'서울역 No.','센터식당번호':'센터식당 No.'};
-
-// selections: { 사업장: Set(업무들) }
-let selections = {};
 const RANKS = ['사원','대리','과장','차장','부장','수석','임원','기타'];
-const rows = {new:[],del:[]};
 
+// 엑셀 열 인덱스 (0-based, A=0)
+const COL = { NO:0, DATE:1, CARD:2, EMPID:3, NAME:4, ENGNAME:5, RANK:6, DEPT:7, PHONE:8, SONGDO:9, CENTER:10, SHUTTLE_SEOUL:11, CENTER_DINING:12, NOTE:13 };
+
+// 사업장+업무 → 타워번호 열 매핑
+function getTowerColFor(site, work) {
+  if (!site || !work) return null;
+  const key = `${site}__${work}`;
+  const map = {
+    // 송도 (J열)
+    '송도__관제': COL.SONGDO,
+    '송도__9층 카페': COL.SONGDO,
+    '송도__9층 회의실': COL.SONGDO,
+    '송도__12층 식당/카페': COL.SONGDO,
+    '송도__근태': COL.SONGDO,
+    // 통근버스 (L열)
+    '송도__통근버스': COL.SHUTTLE_SEOUL,
+    // 서울역 (L열)
+    '서울역__관제': COL.SHUTTLE_SEOUL,
+    // 센터 (K열)
+    '센터__관제': COL.CENTER,
+    // 센터식당 (M열)
+    '센터__식당': COL.CENTER_DINING,
+    // test
+    'test__test': COL.SONGDO,
+  };
+  return map[key] ?? COL.SONGDO;
+}
+function getTowerCol() { return getTowerColFor(curSite, [...selectedWorks][0]||null); }
+
+// 타워번호 열 헤더명
+function getTowerHeaderFor(site, work) {
+  if (!site || !work) return '번호';
+  const key = `${site}__${work}`;
+  const map = {
+    '송도__관제':'송도번호','송도__9층 카페':'송도번호','송도__9층 회의실':'송도번호',
+    '송도__12층 식당/카페':'송도번호','송도__근태':'송도번호',
+    '송도__통근버스':'셔틀버스번호',
+    '서울역__관제':'서울역번호',
+    '센터__관제':'센터번호','센터__식당':'센터식당번호',
+    'test__test':'송도번호',
+  };
+  return map[key] ?? '번호';
+}
+function getTowerHeader() { return getTowerHeaderFor(curSite, [...selectedWorks][0]||null); }
+
+// 메일 템플릿 설정
+function getMailConfigFor(site, work) {
+  const key = `${site}__${work}`;
+  // 김영은 담당 (센터 관제, 센터 식당) → T.02-3457-4344
+  // 김영민 담당 (송도 전체, 서울역, 셔틀버스) → T.02-3457-4335
+  const yeongeun = ['센터__관제','센터__식당'];
+  const isYeongeun = yeongeun.includes(key);
+  return {
+    manager: isYeongeun ? '김영은' : '김영민',
+    phone: isYeongeun ? 'T.02-3457-4344' : 'T.02-3457-4335',
+  };
+}
+function getMailConfig() { return getMailConfigFor(curSite, [...selectedWorks][0]||null); }
+
+// 메일 표 컬럼 정의
+function getMailColumnsFor(site, work) {
+  const key = `${site}__${work}`;
+  const maps = {
+    '송도__관제':           ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'],
+    '송도__9층 카페':       ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'],
+    '송도__9층 회의실':     ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'],
+    '송도__12층 식당/카페': ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'],
+    '송도__근태':           ['출입증','사번','성명','휴대폰','송도번호','비고'],
+    '송도__통근버스':       ['출입증','요청일','사번','성명','부서','휴대폰','셔틀버스번호'],
+    '서울역__관제':         ['출입증','요청일','사번','성명','부서','휴대폰','서울역번호'],
+    '센터__관제':           ['출입증','사번','성명','부서','휴대폰','권한','센터번호','비고'],
+    '센터__식당':           ['사번','성명','센터식당번호','구분','등록삭제'],
+    'test__test':           ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'],
+  };
+  return maps[key] ?? ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'];
+}
+function getMailColumns() { return getMailColumnsFor(curSite, [...selectedWorks][0]||null); }
+
+// ── 제목 생성 ──
+function buildSubjectFor(site, work, regCount, delCount) {
+  const key = `${site}__${work}`;
+  // 근태 전용 제목
+  if (key === '송도__근태') {
+    if (regCount > 0 && delCount > 0) {
+      return `[포스코인터내셔널] 사원증 신규제작 및 삭제 따른 공유의 건 (신규 ${regCount}건, 삭제 ${delCount}건)`;
+    } else if (regCount > 0) {
+      return `[포스코인터내셔널] 사원증 신규 제작 따른 공유의 건 (${regCount}건)`;
+    } else {
+      return `[포스코인터내셔널] 사원증 삭제 따른 공유의 건 (${delCount}건)`;
+    }
+  }
+  // 일반 제목
+  const sitework = `${site || ''} ${work || ''}`.trim();
+  let action = '';
+  let countStr = '';
+  if (regCount > 0 && delCount > 0) {
+    action = '등록 및 삭제';
+    countStr = `(등록 ${regCount}건, 삭제 ${delCount}건)`;
+  } else if (regCount > 0) {
+    action = '등록';
+    countStr = `(등록 ${regCount}건)`;
+  } else {
+    action = '삭제';
+    countStr = `(삭제 ${delCount}건)`;
+  }
+  return `[포스코인터내셔널] ${sitework} ${action} 요청${countStr}`;
+}
+
+// ── 메일 본문 생성 ──
+function buildBodyFor(site, work, regCount, delCount, date, card, tableHtml) {
+  const cfg = getMailConfigFor(site, work);
+  const key = `${site}__${work}`;
+
+  // 근태 전용 본문
+  if (key === '송도__근태') {
+    let action = '';
+    if (regCount > 0 && delCount > 0) action = '신규제작 및 삭제';
+    else if (regCount > 0) action = '신규제작';
+    else action = '삭제';
+    return `<p>본 메일은 당사 출입증 AI Agent로 부터 자동발송되었습니다.<br>문의사항 있으시면 담당자에게 (T.02-3457-4335) 연락부탁드립니다.</p>
+<p>안녕하세요, 포스코휴먼스 사원증 제작 담당자입니다.<br>아래와 같이 포스코인터내셔널 출입증을 ${action}하여 정보 전달드리오니 업무에 참고부탁드립니다.</p>
+${tableHtml}
+<p>감사합니다.</p>`;
+  }
+
+  // 일반 본문
+  let action = '';
+  if (regCount > 0 && delCount > 0) action = '등록 및 삭제';
+  else if (regCount > 0) action = '등록';
+  else action = '삭제';
+  const sitework = `${site || ''} ${work || ''}`.trim();
+  return `<p>본 메일은 당사 출입증 AI Agent로 부터 자동발송되었습니다.<br>문의사항 있으시면 담당자에게 (${cfg.phone}) 연락부탁드립니다.</p>
+<p>안녕하세요, 포스코휴먼스 ${cfg.manager}입니다.<br>아래 포스코인터내셔널 ${sitework} 권한 ${action}을 요청드립니다.<br>완료 후 회신 부탁드립니다.</p>
+${tableHtml}
+<p>감사합니다.</p>`;
+}
+
+// ── HTML 표 생성 ──
+function buildEmailTableFor(site, work, targetRows) {
+  const cols = getMailColumnsFor(site, work);
+  const towerHeader = getTowerHeaderFor(site, work);
+
+  const headerCells = cols.map(c => {
+    const label = c === '송도번호' || c === '서울역번호' || c === '셔틀버스번호' || c === '센터번호' || c === '센터식당번호' ? towerHeader : c;
+    return `<th style="padding:9px 10px;background:#001d59;color:#fff;font-size:12px;font-weight:700;text-align:left;">${label}</th>`;
+  }).join('');
+
+  const bodyRows = targetRows.map((r, i) => {
+    const cells = cols.map(c => {
+      let val = '';
+      switch(c) {
+        case '출입증': val = r.card || ''; break;
+        case '요청일': val = r.date || ''; break;
+        case '사번': val = r.empid || ''; break;
+        case '성명': val = r.name || ''; break;
+        case '영문이름': val = r.engname || ''; break;
+        case '직급': case '권한': val = r.rank || ''; break;
+        case '부서': val = r.dept || ''; break;
+        case '휴대폰': val = r.phone || ''; break;
+        case '송도번호': case '서울역번호': case '셔틀버스번호': case '센터번호': case '센터식당번호': case '번호': val = r.towerNo || ''; break;
+        case '구분': val = '포스코인터내셔널'; break;
+        case '등록삭제': val = r.type === 'reg' ? '등록' : '삭제'; break;
+        case '비고': {
+          const key2 = `${site}__${work}`;
+          if (key2 === '송도__근태') val = r.type === 'reg' ? (r.note||'') : '삭제';
+          else val = r.note || '';
+          break;
+        }
+        default: val = '';
+      }
+      return `<td style="padding:8px 10px;font-size:13px;border-bottom:1px solid #e8e7ef;">${val}</td>`;
+    }).join('');
+    return `<tr style="background:${i%2?'#f8faff':'#fff'}">${cells}</tr>`;
+  }).join('');
+
+  return `<table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;width:100%;max-width:800px;border:1px solid #c4c6d4;border-radius:8px;overflow:hidden;">
+    <thead><tr>${headerCells}</tr></thead>
+    <tbody>${bodyRows}</tbody>
+  </table>`;
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
 const today = new Date().toISOString().split('T')[0];
-
-
+document.getElementById('n_date').value = today;
 const D = new Date();
 document.getElementById('hdate').textContent =
   `${D.getFullYear()}.${String(D.getMonth()+1).padStart(2,'0')}.${String(D.getDate()).padStart(2,'0')} (${['일','월','화','수','목','금','토'][D.getDay()]})`;
 
-// ── 수신자 로드
+// ══════════════════════════════════════════
+//  RECIPIENTS LOAD
+// ══════════════════════════════════════════
+// SITE_CONFIG 구조: { '송도': { '관제': [{company:'보안관리팀', email:'xxx@xx.com'}] } }
 async function loadRecipients() {
   const url = document.getElementById('cfgRecipients').value.trim();
-  const grid = document.getElementById('siteGrid');
-
   if (!url) {
-    // Flow URL 미설정 → 사업장/업무 구조는 보여주되 이메일 없음 안내
-    renderSiteGrid();
-    grid.insertAdjacentHTML('afterend',
-      `<div id="rcptWarning" style="background:#FFF8E1;border:1px solid #FFE08A;border-radius:6px;padding:9px 14px;font-size:12px;color:#B8860B;margin-top:8px">
-        ⚠️ 수신자 Flow URL이 설정되지 않았습니다. ⚙️ Flow URL 설정에서 <b>수신자 목록 Flow URL</b>을 입력해주세요.
-      </div>`
-    );
+    SITE_CONFIG = {
+      '송도': {
+        '관제':           [{company:'포스코와이드', email:'sugjin0@poscowide.com', cc:''}],
+        '9층 카페':       [{company:'송도SE', email:'Lilka882@gmail.com', cc:''},{company:'송도SE', email:'chjh0920@songdose.co.kr', cc:''}],
+        '12층 식당/카페': [{company:'아워홈', email:'hj2731.an@ourhome.co.kr', cc:''}],
+      },
+      '센터': {
+        '식당': [{company:'삼성웰스토리', email:'jina214.kim@samsung.com', cc:''}],
+        '관제': [{company:'포스코와이드', email:'jinwoo4064@poscowide.com', cc:''},{company:'포스코와이드', email:'jjin6842@poscowide.com', cc:''},{company:'포스코와이드', email:'dongwo3@poscowide.com', cc:''}],
+      },
+      '서울역': {
+        '관제': [{company:'에스원', email:'zhqkddh@naver.com', cc:''}],
+      },
+    };
+    renderSiteButtons();
     return;
   }
-
-  // 로딩 표시
-  grid.innerHTML = '<div style="padding:20px;color:var(--hint);font-size:13px">⏳ SharePoint에서 수신자 정보 불러오는 중...</div>';
-  document.getElementById('rcptWarning')?.remove();
-
+  document.getElementById('siteRow').innerHTML = '<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">⏳ 불러오는 중...</span>';
   try {
     const res = await fetch(url, {method:'GET'});
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-
-    // SITE_CONFIG 완전 재구성
-    // SharePoint List 컬럼: 사업장, 업무, 수신자이메일, CC이메일(선택), 번호컬럼
     SITE_CONFIG = {};
     (data.value||data).forEach(item => {
-      const site   = item['사업장']?.trim();
-      const work   = item['업무']?.trim();
-      const email  = item['수신자이메일']?.trim();
-      const cc     = item['CC이메일']?.trim() || '';
-      const numCol = item['번호컬럼']?.trim() || '송도번호';
-      if (!site || !work) return;
+      const site    = (item['Title'] || item['사업장'] || '')?.trim();
+      const work    = (item['OData__xc5c5__xbb34_'] || item['업무'] || '')?.trim();
+      const company = (item['OData__xc5c5__xccb4__xba85_'] || item['업체명'] || '')?.trim();
+      const rawEmail = (item['OData__xc218__xc2e0__xc790_'] || item['수신자'] || '')?.trim();
+      const rawCc   = (item['OData__xcc38__xc870_'] || item['참조'] || '')?.trim() || '';
+      if (!site||!work||!rawEmail) return;
       if (!SITE_CONFIG[site]) SITE_CONFIG[site] = {};
-      if (!SITE_CONFIG[site][work]) SITE_CONFIG[site][work] = {emails:[], cc:[], numCol};
-      // 수신자 — 세미콜론 구분으로 여러 명 가능 (예: a@a.com;b@b.com)
-      const bizName = item['업체명']?.trim() || '';
-      const ccBizName = item['CC업체명']?.trim() || '';
-      email.split(';').map(e=>e.trim()).filter(Boolean).forEach(e => {
-        if (!SITE_CONFIG[site][work].emails.includes(e)) {
-          SITE_CONFIG[site][work].emails.push(e);
-          SITE_CONFIG[site][work].names.push(bizName || e);
-        }
-      });
-      cc.split(';').map(e=>e.trim()).filter(Boolean).forEach(e => {
-        if (!SITE_CONFIG[site][work].cc.includes(e)) {
-          SITE_CONFIG[site][work].cc.push(e);
-          SITE_CONFIG[site][work].ccNames.push(ccBizName || e);
-        }
+      if (!SITE_CONFIG[site][work]) SITE_CONFIG[site][work] = [];
+      // 수신자/참조 세미콜론으로 여러 명 가능
+      const emails = rawEmail.split(';').map(e=>e.trim()).filter(Boolean);
+      emails.forEach(email => {
+        if (!SITE_CONFIG[site][work].find(r=>r.email===email))
+          SITE_CONFIG[site][work].push({company, email, cc: rawCc});
       });
     });
-
-    renderSiteGrid();
-    const totalTO  = Object.values(SITE_CONFIG).flatMap(s=>Object.values(s).flatMap(w=>w.emails)).length;
-    const totalCC  = Object.values(SITE_CONFIG).flatMap(s=>Object.values(s).flatMap(w=>w.cc)).length;
-    toast(`✅ 수신자 로드 완료 — TO ${totalTO}명 / CC ${totalCC}명`, 'ok');
+    renderSiteButtons();
+    toast('수신자 정보 로드 완료','ok');
   } catch(e) {
-    renderSiteGrid();
-    const warn = document.getElementById('rcptWarning');
-    const msg = `<div id="rcptWarning" style="background:#FDECEA;border:1px solid #FFC9C9;border-radius:6px;padding:9px 14px;font-size:12px;color:#C0392B;margin-top:8px">❌ 수신자 로드 실패: ${e.message}</div>`;
-    if (warn) warn.outerHTML = msg;
-    else grid.insertAdjacentHTML('afterend', msg);
-    toast('❌ 수신자 로드 실패 — Flow URL을 확인해주세요', 'err');
+    document.getElementById('siteRow').innerHTML = `<span style="font-size:11px;color:#ba1a1a;padding:4px 10px;display:block;">❌ ${e.message}</span>`;
+    toast('수신자 로드 실패: '+e.message,'err');
   }
 }
 
-// ── 사업장/업무 그리드 렌더
-function renderSiteGrid() {
-  const grid = document.getElementById('siteGrid');
+function renderSiteButtons() {
+  const el = document.getElementById('siteRow');
   const sites = Object.keys(SITE_CONFIG);
-  if (!sites.length) { grid.innerHTML='<div style="padding:20px;color:var(--hint)">데이터 없음</div>'; return; }
+  if (!sites.length) { el.innerHTML='<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">데이터 없음</span>'; return; }
+  const icons = {'송도':'🏢','센터':'🏭','서울역':'🏙️','셔틀버스':'🚌'};
+  el.innerHTML = sites.map(s =>
+    `<button class="site-pill" data-site="${s}" onclick="selectSite('${s}')"><span class="s-dot"></span>${icons[s]||'📍'} ${s}</button>`
+  ).join('');
+}
 
-  grid.style.gridTemplateColumns = `repeat(${sites.length},1fr)`;
-  grid.className = 'site-grid';
-  grid.innerHTML = sites.map(site => {
-    const works = Object.keys(SITE_CONFIG[site]);
-    return `
-    <div class="site-col">
-      <div class="site-name-row">
-        <input type="radio" class="site-checkbox" name="siteRadio" id="sc_${site}" onchange="toggleSite('${site}',this.checked)"/>
-        <span class="site-icon">${SITE_ICONS[site]||'📍'}</span>
-        <label for="sc_${site}" class="site-name">${site}</label>
+function selectSite(site) {
+  curSite = curSite === site ? null : site;
+  selectedWorks = new Set();
+  document.querySelectorAll('.site-pill').forEach(b => b.classList.toggle('active', b.dataset.site === curSite));
+  const works = curSite ? Object.keys(SITE_CONFIG[curSite]||{}) : [];
+  const wr = document.getElementById('workRow');
+  if (works.length) {
+    wr.innerHTML = `<div class="work-chk-wrap">
+      <div class="work-chk-all">
+        <input type="checkbox" id="chkAllWorks" onchange="toggleAllWorks(this.checked)"/>
+        <label for="chkAllWorks">전체 선택</label>
       </div>
-      <div class="work-checks">
-        ${works.map(w=>{
-          const wk = w.replace(/[\s\/]/g,'_');
-          return `<div class="work-item" id="wi_${site}_${wk}">
-            <input type="${site==='센터'?'radio':'checkbox'}" class="work-chk" name="work_${site}" id="wc_${site}_${wk}" disabled
-              onchange="toggleWork('${site}','${w}',this.checked)"/>
-            <label for="wc_${site}_${wk}" class="work-lbl">${WORK_ICONS[w]||'📋'} ${w}</label>
-          </div>`;
-        }).join('')}
-      </div>
+      ${works.map(w => `
+        <div class="work-chk-item" id="wrapWork_${CSS.escape(w)}">
+          <input type="checkbox" id="chk_${CSS.escape(w)}" value="${w}" onchange="toggleWork('${w}', this.checked); document.getElementById('wrapWork_${CSS.escape(w)}').classList.toggle('checked', this.checked)"/>
+          <label for="chk_${CSS.escape(w)}">${workIcon(w)} ${w}</label>
+        </div>`).join('')}
     </div>`;
-  }).join('');
-}
-
-// ── 사업장 토글
-function toggleSite(site, on) {
-  if (on) {
-    // 기존 선택 사업장 전부 초기화
-    Object.keys(selections).forEach(prevSite => {
-      Object.keys(SITE_CONFIG[prevSite]||{}).forEach(w=>{
-        const wk=w.replace(/[\s\/]/g,'_');
-        const item=document.getElementById(`wi_${prevSite}_${wk}`);
-        const chk=document.getElementById(`wc_${prevSite}_${wk}`);
-        if(item)item.classList.remove('enabled','selected');
-        if(chk){chk.disabled=true;chk.checked=false;}
-      });
-    });
-    selections = {};
-
-    selections[site] = new Set();
-    Object.keys(SITE_CONFIG[site]).forEach(w=>{
-      const wk=w.replace(/[\s\/]/g,'_');
-      const item=document.getElementById(`wi_${site}_${wk}`);
-      const chk=document.getElementById(`wc_${site}_${wk}`);
-      if(item)item.classList.add('enabled');
-      if(chk)chk.disabled=false;
-
-      // 송도는 전체 자동 선택, 센터는 직접 선택
-      if (site === '송도') {
-        if(item)item.classList.add('selected');
-        if(chk)chk.checked=true;
-        selections[site].add(w);
-      }
-    });
+    // 기본 전체 선택
+    toggleAllWorks(true);
+    document.getElementById('chkAllWorks').checked = true;
+  } else {
+    wr.innerHTML = '<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">사업장을 먼저 선택하세요</span>';
   }
-  updateSummary(); applyAllRcpt(); updateNumHeader();
-  renderTable('new'); renderTable('del');
+  hideRcptPreview();
+  updateSelBadge();
 }
 
-// ── 업무 토글
-function toggleWork(site, work, on) {
-  if (!selections[site]) return;
-
-  // 센터는 단일 선택 — 기존 업무 먼저 해제
-  if (site === '센터') {
-    [...selections[site]].forEach(prevWork => {
-      const pwk = prevWork.replace(/[\s\/]/g,'_');
-      const pitem = document.getElementById(`wi_${site}_${pwk}`);
-      if(pitem) pitem.classList.remove('selected');
-    });
-    selections[site] = new Set();
-  }
-
-  const wk=work.replace(/[\s\/]/g,'_');
-  const item=document.getElementById(`wi_${site}_${wk}`);
-  if (on) { selections[site].add(work); if(item)item.classList.add('selected'); }
-  else    { selections[site].delete(work); if(item)item.classList.remove('selected'); }
-  updateSummary(); applyAllRcpt(); updateNumHeader(); updateNumCols();
-  renderTable('new'); renderTable('del');
+function toggleWork(work, checked) {
+  if (checked) selectedWorks.add(work);
+  else selectedWorks.delete(work);
+  // 전체선택 체크박스 상태 업데이트
+  const allWorks = curSite ? Object.keys(SITE_CONFIG[curSite]||{}) : [];
+  const allChk = document.getElementById('chkAllWorks');
+  if (allChk) allChk.checked = allWorks.length > 0 && allWorks.every(w => selectedWorks.has(w));
+  // 수신자 업데이트 — 선택된 모든 업무 수신자 합산
+  updateRcptFromWorks();
+  updateSelBadge();
+  toast(selectedWorks.size > 0 ? `${[...selectedWorks].join(' · ')} 선택됨` : '업무 선택 해제', 'info');
 }
 
-// ── 요약 바
-function updateSummary() {
-  const el = document.getElementById('selSummary');
-  const active = Object.keys(selections);
-  if (!active.length) {
-    el.className='sel-summary empty';
-    el.innerHTML='<div class="ss-empty">← 사업장 체크 후 업무를 선택해주세요</div>';
-    return;
-  }
-  el.className='sel-summary';
-  // 업무별로 각각 표시
-  const items = active.flatMap(site =>
-    [...selections[site]].map(work => {
-      const cfg = SITE_CONFIG[site]?.[work] || {};
-      const emails = cfg.emails || [];
-      const ccs = (cfg.cc || []).filter(e => !emails.includes(e));
-      return `<div class="ss-item">
-        <span class="ss-site-name">${SITE_ICONS[site]||''} ${site}</span>
-        <span class="ss-works">${WORK_ICONS[work]||'📋'} ${work}</span>
-        <span class="ss-rcpt">TO ${emails.length}명${emails.length?' · '+emails.join(', '):''}</span>
-        ${ccs.length?`<span class="ss-cc">CC ${ccs.length}명 · ${ccs.join(', ')}</span>`:''}
-      </div>`;
-    })
-  );
-  el.innerHTML = `<div class="ss-items">${items.join('')}</div>`;
+function toggleAllWorks(checked) {
+  const allWorks = curSite ? Object.keys(SITE_CONFIG[curSite]||{}) : [];
+  allWorks.forEach(w => {
+    if (checked) selectedWorks.add(w);
+    else selectedWorks.delete(w);
+  });
+  document.querySelectorAll('.work-chk-item input[type=checkbox]').forEach(cb => cb.checked = checked);
+  document.querySelectorAll('.work-chk-item').forEach(el => el.classList.toggle('checked', checked));
+  updateRcptFromWorks();
+  updateSelBadge();
 }
 
-// ── 테이블 번호 헤더 동적 업데이트
-function updateNumHeader() {} // 카드번호로 통합
-
-// 번호 셀 인풋 생성
-function makeCellInput(type, i, field, val) {
-  const v = (val||'').replace(/"/g,'&quot;');
-  const af = val ? 'af' : '';
-  return `<input class="cell-input ${af}" value="${v}" placeholder="${field}" oninput="upd('${type}',${i},'${field}',this.value)"/>`;
-}
-
-// 선택 사업장/업무에 따라 번호 컬럼 show/hide
-function updateNumCols() {
-  const activeSite = Object.keys(selections)[0];
-  const activeWork = activeSite ? [...(selections[activeSite]||[])][0] : null;
-  const numCol = (activeSite && activeWork)
-    ? (SITE_CONFIG[activeSite]?.[activeWork]?.numCol || '송도번호')
-    : '송도번호';
-
-  ['송도번호','센터번호','센터식당번호'].forEach(col => {
-    const show = col === numCol;
-    document.querySelectorAll(`.col-${col}`).forEach(el => {
-      el.style.display = show ? '' : 'none';
+function updateRcptFromWorks() {
+  // 선택된 모든 업무의 수신자 합산 (중복 제거)
+  const allRcpts = [];
+  const seenEmails = new Set();
+  [...selectedWorks].forEach(w => {
+    const rcpts = SITE_CONFIG[curSite]?.[w] || [];
+    rcpts.forEach(r => {
+      if (!seenEmails.has(r.email)) { seenEmails.add(r.email); allRcpts.push(r); }
     });
   });
-}
-function getSiteEmails(site) {
-  if (!selections[site]) return [];
-  return [...new Set([...selections[site]].flatMap(w=>SITE_CONFIG[site]?.[w]?.emails||[]))];
-}
-
-// ── 사업장별 CC 수집
-function getSiteCCs(site) {
-  if (!selections[site]) return [];
-  return [...new Set([...selections[site]].flatMap(w=>SITE_CONFIG[site]?.[w]?.cc||[]))];
+  if (allRcpts.length > 0) {
+    applyAutoRcpt(allRcpts);
+    renderRcptPreview(allRcpts);
+  } else {
+    clearRcpt('rcptMain');
+    hideRcptPreview();
+  }
 }
 
-// ── 전체 수신자 박스 업데이트
-function applyAllRcpt() {
-  // 업무별로 각각 TO/CC 수집 → 전체 합산 후 중복 제거
-  // TO: {email, name} 쌍으로 수집 (중복 이메일 제거)
-  const toMap = new Map();
-  Object.keys(selections).forEach(s=>{
-    [...selections[s]].forEach(w=>{
-      const cfg=SITE_CONFIG[s]?.[w]||{};
-      (cfg.emails||[]).forEach((e,i)=>{
-        if(!toMap.has(e)) toMap.set(e, cfg.names?.[i]||e);
-      });
-    });
+function workIcon(w) {
+  const m={'식당':'🍽️','셔틀버스':'🚌','관제':'🎛️','9층 카페':'☕','12층 식당/카페':'🍱','비상승강기':'🛗'};
+  return m[w]||'📋';
+}
+
+function renderRcptPreview(rcpts) {
+  const wrap = document.getElementById('rcptPreviewWrap');
+  const box  = document.getElementById('rcptPreview');
+  if (!rcpts.length) { hideRcptPreview(); return; }
+  // 업체별로 그룹핑
+  const grouped = {};
+  rcpts.forEach(r => {
+    if (!grouped[r.company]) grouped[r.company] = [];
+    grouped[r.company].push(r.email);
   });
-  const ccMap = new Map();
-  Object.keys(selections).forEach(s=>{
-    [...selections[s]].forEach(w=>{
-      const cfg=SITE_CONFIG[s]?.[w]||{};
-      (cfg.cc||[]).forEach((e,i)=>{
-        if(!toMap.has(e)&&!ccMap.has(e)) ccMap.set(e, cfg.ccNames?.[i]||e);
-      });
-    });
-  });
+  // TO
+  box.innerHTML = Object.entries(grouped).map(([co, emails]) =>
+    emails.map(em => `
+      <div class="rcpt-item">
+        <span class="co" style="color:#1d5daf;">TO</span>
+        <span class="co">${co||''}</span>
+        <span class="em">${em}</span>
+      </div>`).join('')
+  ).join('');
+  // CC
+  const ccList = [...new Set(rcpts.map(r=>r.cc).filter(Boolean))];
+  if (ccList.length) {
+    box.innerHTML += ccList.map(cc => `
+      <div class="rcpt-item">
+        <span class="co" style="color:#747683;">CC</span>
+        <span class="em" style="color:#747683;">${cc}</span>
+      </div>`).join('');
+  }
+  wrap.style.display = '';
+}
 
-  ['rcptN','rcptD'].forEach(id=>{
-    clearRcpt(id);
-    const wrap=document.getElementById(id);
-    const addBtn=wrap.querySelector('.rtag-add');
-    toMap.forEach((name,email)=>{
-      const tag=document.createElement('div'); tag.className='rtag auto';
-      tag.dataset.email=email;
-      tag.innerHTML=`<span class="rtlbl">TO</span><span style="font-size:12px;font-weight:600;color:var(--blue);padding:0 4px">${name}</span><button class="rtag-rm" onclick="this.parentElement.remove()" title="${email}">✕</button>`;
-      wrap.insertBefore(tag,addBtn);
-    });
-    ccMap.forEach((name,email)=>{
-      const tag=document.createElement('div'); tag.className='rtag auto';
-      tag.dataset.email=email;
-      tag.style.borderColor='#F0D080'; tag.style.background='#FFFBEC';
-      tag.innerHTML=`<span class="rtlbl" style="color:#B8860B;background:#FFF3C0">CC</span><span style="font-size:12px;font-weight:600;color:#B8860B;padding:0 4px">${name}</span><button class="rtag-rm" onclick="this.parentElement.remove()" title="${email}" style="color:#B8860B">✕</button>`;
-      wrap.insertBefore(tag,addBtn);
-    });
+function hideRcptPreview() {
+  document.getElementById('rcptPreviewWrap').style.display = 'none';
+  document.getElementById('rcptPreview').innerHTML = '';
+}
+
+function updateSelBadge() {
+  const badge = document.getElementById('selBadge');
+  if (curSite) {
+    const wStr = selectedWorks.size > 0 ? ` · ${[...selectedWorks].join(', ')}` : '';
+    badge.textContent = curSite + wStr;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function updateTowerHeader() {
+  document.getElementById('thTowerNo').textContent = '번호';
+}
+
+// ══════════════════════════════════════════
+//  RECIPIENTS BOX
+// ══════════════════════════════════════════
+function applyAutoRcpt(rcpts) {
+  clearRcpt('rcptMain');
+  const wrap = document.getElementById('rcptMain');
+  const addBtn = wrap.querySelector('.rtag-add-btn');
+  // TO
+  rcpts.forEach(r => {
+    const tag = document.createElement('div');
+    tag.className = 'rtag auto';
+    tag.innerHTML = `<span class="rlbl">TO</span><input type="email" value="${r.email}"/><button class="rtag-rm" onclick="this.parentElement.remove()">✕</button>`;
+    wrap.insertBefore(tag, addBtn);
+  });
+  // CC (중복 제거)
+  const ccList = [...new Set(rcpts.map(r=>r.cc).filter(Boolean))];
+  ccList.forEach(cc => {
+    const tag = document.createElement('div');
+    tag.className = 'rtag auto';
+    tag.style.borderColor = '#c4c6d4';
+    tag.style.background = '#f4f3fb';
+    tag.innerHTML = `<span class="rlbl" style="color:#747683;background:#e3e2ea;">CC</span><input type="email" value="${cc}"/><button class="rtag-rm" onclick="this.parentElement.remove()">✕</button>`;
+    wrap.insertBefore(tag, addBtn);
   });
 }
 
-// ── 사업장별 번호 컬럼
-function getSiteNumCol(site) {
-  if (!selections[site]?.size) return '송도번호';
-  for (const w of selections[site]) {
-    const col=SITE_CONFIG[site]?.[w]?.numCol;
-    if(col) return col;
+function clearRcpt(id) {
+  const wrap = document.getElementById(id);
+  const addBtn = wrap.querySelector('.rtag-add-btn');
+  [...wrap.querySelectorAll('.rtag')].forEach(t=>t.remove());
+  if (!addBtn) {
+    const b = document.createElement('button');
+    b.className = 'rtag-add-btn';
+    b.setAttribute('onclick', `addRcpt('${id}')`);
+    b.innerHTML = '<span class="material-symbols-outlined" style="font-size:13px;">add</span> 직접 추가';
+    wrap.appendChild(b);
   }
-  return '송도번호';
 }
 
-// ── 다중 붙여넣기 처리
-async function handlePaste(e, type) {
-  const text = (e.clipboardData || window.clipboardData).getData('text');
-  const empids = text.split(/[\t\n\r, ]+/).map(s=>s.trim()).filter(Boolean);
+function addRcpt(id) {
+  const wrap = document.getElementById(id), btn = wrap.querySelector('.rtag-add-btn');
+  const tag = document.createElement('div'); tag.className = 'rtag';
+  tag.innerHTML = '<span class="rlbl">TO</span><input type="email" placeholder="이메일 입력"/><button class="rtag-rm" onclick="this.parentElement.remove()">✕</button>';
+  wrap.insertBefore(tag, btn); tag.querySelector('input').focus();
+}
 
-  if (empids.length === 0) return; // 빈 값이면 무시
+function getRcpts() {
+  const tags = [...document.querySelectorAll('#rcptMain .rtag')];
+  const to = [], cc = [];
+  tags.forEach(tag => {
+    const lbl = tag.querySelector('.rlbl')?.textContent?.trim();
+    const email = tag.querySelector('input[type=email]')?.value?.trim();
+    if (!email) return;
+    if (lbl === 'CC') cc.push(email);
+    else to.push(email);
+  });
+  return { to, cc };
+}
 
+// ══════════════════════════════════════════
+//  EXCEL PASTE
+// ══════════════════════════════════════════
+function handlePaste(e) {
   e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  document.getElementById('pasteArea').value = '';
+  processPasteText(text);
+}
 
-  const isN = type === 'new';
-  const input = document.getElementById(isN?'sn_empid':'sd_empid');
-  input.value = '';
+function processPasteText(text) {
+  if (!text.trim()) return;
+  const towerCol = getTowerCol();
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  let added = 0, skipped = 0;
 
-  showMsg(type, `⏳ ${empids.length}명 일괄 조회 중...`, 'no');
+  lines.forEach(line => {
+    const cells = line.split('\t').map(c => c.trim());
+    // 최소 사번(D=3) 또는 성명(E=4) 있어야 추가
+    const empid = cells[COL.EMPID] || '';
+    const name  = cells[COL.NAME]  || '';
+    if (!empid && !name) { skipped++; return; }
+    // 중복 체크
+    if (empid && rows.some(r => r.empid === empid)) { skipped++; return; }
+
+    const date    = cells[COL.DATE]    || today;
+    const card    = cells[COL.CARD]    || '';
+    const engname = cells[COL.ENGNAME] || '';
+    const rank    = cells[COL.RANK]    || '';
+    const dept    = cells[COL.DEPT]    || '';
+    const phone   = cells[COL.PHONE]   || '';
+    const note    = cells[COL.NOTE]    || '';
+    const towerNo = towerCol !== null ? (cells[towerCol] || '') : '';
+    // 원본 엑셀 셀 전체 저장 (나중에 업무 변경 시 재매핑용)
+    const rawCells = [...cells];
+
+    rows.push({ empid, name, engname, rank, dept, phone, towerNo, note, card, date, type:'reg', rawCells });
+    added++;
+  });
+
+  document.getElementById('pasteArea').value = '';
+  renderTable();
+  if (added > 0) {
+    showMsg(`✅ ${added}명 추가됨${skipped > 0 ? ` (${skipped}건 중복/빈행 제외)` : ''}`, 'ok');
+    toast(`엑셀에서 ${added}명 추가됨`, 'ok');
+  } else {
+    showMsg(`⚠️ 추가된 인원 없음 (${skipped}건 중복 또는 빈행)`, 'no');
+  }
+}
+
+// ══════════════════════════════════════════
+//  ROW ADD (직원 조회)
+// ══════════════════════════════════════════
+async function addRow() {
+  const name  = document.getElementById('sn_name').value.trim();
+  const empid = document.getElementById('sn_empid').value.trim();
+  if (!name && !empid) { showMsg('성명 또는 사번을 입력해주세요.','no'); return; }
+  if (empid && rows.some(r => r.empid === empid)) { showMsg('이미 추가된 인원입니다.','dup'); return; }
+
+  const btn = document.getElementById('btnAdd');
+  const sp  = document.getElementById('spN');
+  const ico = document.getElementById('spNIco');
+  const txt = document.getElementById('spNTxt');
+  btn.disabled=true; sp.style.display='block'; ico.style.display='none'; txt.textContent='조회중';
 
   const url = document.getElementById('cfgLookup').value.trim();
-  const uniqueEmpids = empids.filter(empid => !rows[type].some(r => r.사번 === empid));
-  const dupCount = empids.length - uniqueEmpids.length;
-
-  // 3개씩 배치 처리 (동시 요청 과부하 방지)
-  const batchSize = 3;
-  const allResults = [];
-  for (let i = 0; i < uniqueEmpids.length; i += batchSize) {
-    const batch = uniqueEmpids.slice(i, i + batchSize);
-    const batchResults = await Promise.all(batch.map(async empid => {
-      try {
-        if (url) {
-          const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({성명:'', 사번:empid})});
-          if (res.ok) { const d=await res.json(); if(d.found&&d.employee) return {empid, found:d.employee}; }
-        }
-      } catch(err) { console.error(err); }
-      return {empid, found:null};
-    }));
-    allResults.push(...batchResults);
-    // 배치 간 살짝 딜레이
-    if (i + batchSize < uniqueEmpids.length) await new Promise(r=>setTimeout(r,300));
-  }
-  const results = allResults;
-
-  let success = 0, fail = 0;
-  results.forEach(({empid, found}) => {
-    const nr = found ? {...found} : {출입증:'',직급:'',사번:empid,성명:'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',구분:'',권한:'',비고:''};
-    if (found) {
-      nr.송도번호 = found.송도번호 || '';
-      nr.센터번호 = found.센터번호 || '';
-      nr.센터식당번호 = found.센터식당번호 || '';
-      success++;
-    } else { fail++; }
-    rows[type].push(nr);
-  });
-
-  renderTable(type);
-  const msg = `✅ ${success}명 조회 완료${dupCount?` / ${dupCount}명 중복 제외`:''}${fail?` / ${fail}명 미조회(빈 행 추가)`:''}`;
-  showMsg(type, msg, 'ok');
-}
-
-// ── 인원 추가
-async function addRow(type) {
-  const isN=type==='new';
-  const name='';
-  const empid=document.getElementById(isN?'sn_empid':'sd_empid').value.trim();
-  if(!empid){showMsg(type,'사번을 입력해주세요.','no');return;}
-  if(rows[type].some(r=>empid&&r.사번===empid)){showMsg(type,'이미 추가된 인원입니다.','dup');return;}
-
-  const btn=document.getElementById(isN?'btnAN':'btnAD');
-  const sp=document.getElementById(isN?'spN':'spD');
-  const txt=document.getElementById(isN?'spNTxt':'spDTxt');
-  btn.disabled=true;sp.style.display='block';txt.textContent='조회중';
-
-  let found=null;
+  let found = null;
+  const DEMO = [
+    {empid:'10012345',name:'홍길동',engname:'HONG GIL DONG',rank:'대리',dept:'행정지원그룹',phone:'010-1234-5678',towerNo:'T-042'},
+    {empid:'10023456',name:'김영희',engname:'KIM YOUNG HEE',rank:'과장',dept:'재무회계그룹',phone:'010-2345-6789',towerNo:'T-105'},
+    {empid:'10034567',name:'이철수',engname:'LEE CHEOL SOO',rank:'사원',dept:'IT지원그룹',phone:'010-3456-7890',towerNo:'T-207'},
+    {empid:'10045678',name:'박지현',engname:'PARK JI HYUN',rank:'부장',dept:'인사그룹',phone:'010-4567-8901',towerNo:'T-301'},
+    {empid:'10056789',name:'최민준',engname:'CHOI MIN JUN',rank:'차장',dept:'전략기획그룹',phone:'010-5678-9012',towerNo:'T-508'},
+  ];
   try {
-    const url=document.getElementById('cfgLookup').value.trim();
-    if(url){
-      const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({성명:name,사번:empid})});
-      if(res.ok){const d=await res.json();if(d.found&&d.employee)found=d.employee;}
-    }
-  } catch(e){console.error(e);}
-
-  btn.disabled=false;sp.style.display='none';txt.textContent='+ 추가';
-
-  const nr=found?{...found}:{출입증:'',직급:'',사번:empid||'',성명:name||'',영문이름:'',부문:'',부서:'',휴대폰:'',송도번호:'',센터번호:'',센터식당번호:'',구분:'',권한:'',비고:''};
-  if (found) {
-    nr.출입증 = found.출입증 || '';
-    nr.직급 = found.직급 || '';
-    nr.성명 = found.성명 || '';
-    nr.영문이름 = found.영문이름 || '';
-    nr.부문 = found.부문 || '';
-    nr.부서 = found.부서 || '';
-    nr.휴대폰 = found.휴대폰 || '';
-    nr.송도번호 = found.송도번호 || '';
-    nr.센터번호 = found.센터번호 || '';
-    nr.센터식당번호 = found.센터식당번호 || '';
-  }
-  rows[type].push(nr);
-  renderTable(type);
-
-  // 성명 미리보기 표시
-  const np = document.getElementById(isN?'npN':'npD');
-  if (np) {
-    if (found) {
-      np.textContent = `👤 ${found.성명}`;
-      np.style.display = 'block';
+    if (url) {
+      const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({성명:name,사번:empid})});
+      if (res.ok){const d=await res.json();const r=d.result||d;if(r.found&&r.employee){const e=r.employee;
+          // 모든 번호 저장 → allNums로 업무별 재매핑
+          const towerNo = e.송도번호||''; // 기본값, allNums로 재매핑됨
+          found={empid:e.사번,name:e.성명,engname:e.영문이름,rank:e.직급,dept:e.부서,phone:e.휴대폰||'',towerNo,
+            cardType:e.출입증||'',
+            allNums:{송도:e.송도번호||'',센터:e.센터번호||'',서울역:e.서울역번호||'',센터식당:e.센터식당번호||''}};}}
     } else {
-      np.style.display = 'none';
+      await new Promise(r=>setTimeout(r,350));
+      const d = DEMO.find(e=>(name&&empid)?(e.name===name&&e.empid===empid):name?e.name===name:e.empid===empid)||null;
+      if (d) found = {...d};
     }
-  }
+  } catch(e){ console.error(e); }
 
-  showMsg(type,found?`✅ ${found.성명} (${found.사번}) 추가됨`:'⚠️ 조회 결과 없음 — 빈 행 추가. 직접 입력해주세요.',found?'ok':'no');
-  document.getElementById(isN?'sn_empid':'sd_empid').value='';
-  document.getElementById(isN?'sn_empid':'sd_empid').focus();
-  // 성명 미리보기 초기화
-  const npClear = document.getElementById(isN?'npN':'npD');
-  if (npClear) npClear.style.display='none';
+  btn.disabled=false; sp.style.display='none'; ico.style.display=''; txt.textContent='추가';
+
+  const towerCol = getTowerCol();
+  const newRow = found
+    ? {...found, type:'reg', card: found.cardType || document.getElementById('n_card').value, date: document.getElementById('n_date').value, note:''}
+    : {empid, name, engname:'', rank:'', dept:'', phone:'', towerNo:'', type:'reg', card: document.getElementById('n_card').value, date: document.getElementById('n_date').value, note:''};
+
+  rows.push(newRow);
+  renderTable();
+  showMsg(found ? `✅ ${found.name} (${found.empid}) 추가됨` : `⚠️ 조회 결과 없음 — 빈 행 추가. 직접 입력해주세요.`, found?'ok':'no');
+  document.getElementById('sn_name').value='';
+  document.getElementById('sn_empid').value='';
+  document.getElementById('sn_name').focus();
 }
 
-// ── 테이블 렌더
-function renderTable(type) {
-  const isN=type==='new';
-  const tbody=document.getElementById(isN?'tbodyNew':'tbodyDel');
-  const data=rows[type];
-  document.getElementById(isN?'cntNew':'cntDel').textContent=`${data.length}명`;
-  document.getElementById(isN?'actLN':'actLD').textContent=
-    data.length?`총 ${data.length}명 · 전송 전 내용을 확인해주세요`:'인원을 추가한 후 전송하세요';
+// ══════════════════════════════════════════
+//  TABLE RENDER
+// ══════════════════════════════════════════
+function renderTable() {
+  const tbody = document.getElementById('tbodyMain');
+  const regCount = rows.filter(r=>r.type==='reg').length;
+  const delCount = rows.filter(r=>r.type==='del').length;
 
-  // 현재 선택 사업장/업무 기반 번호컬럼
-  const _activeSite = Object.keys(selections)[0];
-  const _activeWork = _activeSite ? [...(selections[_activeSite]||[])][0] : null;
-  const numCol = (_activeSite && _activeWork)
-    ? (SITE_CONFIG[_activeSite]?.[_activeWork]?.numCol || '송도번호')
-    : '송도번호';
+  // 카운트 chips
+  const cntReg = document.getElementById('cntReg');
+  const cntDel = document.getElementById('cntDel');
+  const cntTotal = document.getElementById('cntTotal');
+  if (regCount > 0) { cntReg.textContent=`등록 ${regCount}명`; cntReg.style.display=''; } else cntReg.style.display='none';
+  if (delCount > 0) { cntDel.textContent=`삭제 ${delCount}명`; cntDel.style.display=''; } else cntDel.style.display='none';
+  cntTotal.textContent = `총 ${rows.length}명`;
 
-  // 헤더 동적 업데이트 (빈 테이블이어도 항상 실행)
-  const thead = document.getElementById(isN?'theadNew':'theadDel');
-  if (thead) {
-    if (numCol === '센터식당번호') {
-      thead.innerHTML = '<tr><th>#</th><th>사번</th><th>성명</th><th>식당번호</th><th>구분</th><th>비고</th><th></th></tr>';
-    } else if (numCol === '센터번호') {
-      thead.innerHTML = '<tr><th>#</th><th>출입증</th><th>사번</th><th>성명</th><th>부서</th><th>휴대폰</th><th>권한</th><th>센터 No.</th><th>비고</th><th></th></tr>';
-    } else {
-      thead.innerHTML = '<tr><th>#</th><th>출입증</th><th>사번</th><th>성명</th><th>휴대폰</th><th>송도 No.</th><th></th></tr>';
-    }
-  }
+  document.getElementById('actInfo').textContent = rows.length
+    ? `총 ${rows.length}명 (등록 ${regCount}명 · 삭제 ${delCount}명) · 전송 전 내용을 확인해주세요`
+    : '인원을 추가한 후 전송하세요';
 
-  if(!data.length){
-    const cols = numCol === '센터식당번호' ? 7 : 12;
-    tbody.innerHTML=`<tr><td colspan="${cols}"><div class="tbl-empty">조회 후 인원을 추가해주세요</div></td></tr>`;
+  if (!rows.length) {
+    tbody.innerHTML='<tr><td colspan="12"><div class="tbl-empty"><span class="material-symbols-outlined" style="font-size:28px;display:block;margin:0 auto 8px;opacity:.35;">person_search</span>직원 조회 또는 엑셀 붙여넣기로 인원을 추가하세요</div></td></tr>';
     return;
   }
-  // ── 모드별 테이블 렌더
-  const ci = (field, val, ph) => `<input class="cell-input ${val?'af':''}" value="${esc(val||'')}" placeholder="${ph||field}" oninput="upd('${type}',${i},'${field}',this.value)"/>`;
 
-  if (numCol === '센터식당번호') {
-    // ── 센터 식당
-    // 구분: 포스코인터내셔널 고정 / 비고: 신규등록→선택, 삭제→삭제고정
-    tbody.innerHTML = data.map((r,i) => {
-      // 구분 자동 세팅
-      if (!r.구분) { r.구분 = '포스코인터내셔널'; upd(type,i,'구분','포스코인터내셔널'); }
-      if (!isN && !r.비고) { r.비고 = '삭제'; upd(type,i,'비고','삭제'); }
-      const bigoCell = isN
-        ? `<select class="cell-select" onchange="upd('${type}',${i},'비고',this.value)">
-            <option value="">비고</option>
-            <option value="신규">신규</option>
-            <option value="재등록">재등록</option>
-           </select>`
-        : `<input class="cell-input af" value="삭제" readonly style="color:var(--red);font-weight:600"/>`;
-      return `
-      <tr>
-        <td>${i+1}</td>
-        <td>${ci('사번',r.사번,'사번')}</td>
-        <td>${ci('성명',r.성명,'성명')}</td>
-        <td>${ci('센터식당번호',r.센터식당번호,'식당번호')}</td>
-        <td><input class="cell-input af" value="포스코인터내셔널" readonly style="color:var(--sub);font-weight:600"/></td>
-        <td>${bigoCell}</td>
-        <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
-      </tr>`;
-    }).join('');
-    // 비고 select 값 복원 (신규등록만)
-    if (isN) data.forEach((r,i)=>{
-      const sels=tbody.querySelectorAll('select');
-      if(sels[i]&&r.비고)sels[i].value=r.비고;
-    });
+  const ro = RANKS.map(r=>`<option value="${r}">${r}</option>`).join('');
+  tbody.innerHTML = rows.map((r,i) => {
+    const typeOpts = `<option value="reg" ${r.type==='reg'?'selected':''}>등록</option><option value="del" ${r.type==='del'?'selected':''}>삭제</option>`;
+    const typeClass = r.type==='reg'?'type-reg':'type-del';
+    return `<tr>
+      <td>${i+1}</td>
+      <td><input class="cell-in ${r.rank?'filled':''}" value="${esc(r.rank)}" placeholder="구분" oninput="upd(${i},'rank',this.value)" style="width:70px;"/></td>
+      <td><select class="cell-sel ${typeClass}" onchange="upd(${i},'type',this.value);renderTable()" style="width:66px;">${typeOpts}</select></td>
+      <td><input class="cell-in ${r.empid?'filled':''}" value="${esc(r.empid)}" placeholder="사번" oninput="upd(${i},'empid',this.value)"/></td>
+      <td><input class="cell-in ${r.name?'filled':''}" value="${esc(r.name)}" placeholder="성명" oninput="upd(${i},'name',this.value)" style="min-width:70px;"/></td>
+      <td><input class="cell-in" value="${esc(r.engname)}" placeholder="영문이름" oninput="upd(${i},'engname',this.value)" style="min-width:110px;"/></td>
+      <td><select class="cell-sel" onchange="upd(${i},'rank',this.value)" style="width:70px;"><option value="">-</option>${ro}</select></td>
+      <td><input class="cell-in ${r.dept?'filled':''}" value="${esc(r.dept)}" placeholder="부서" oninput="upd(${i},'dept',this.value)" style="min-width:90px;"/></td>
+      <td><input class="cell-in" value="${esc(r.phone)}" placeholder="010-0000-0000" oninput="upd(${i},'phone',this.value)" style="min-width:110px;"/></td>
+      <td><input class="cell-in ${r.towerNo?'filled':''}" value="${esc(r.towerNo)}" placeholder="-" oninput="upd(${i},'towerNo',this.value)" style="width:80px;"/></td>
+      <td><input class="cell-in" value="${esc(r.note)}" placeholder="비고" oninput="upd(${i},'note',this.value)" style="min-width:80px;"/></td>
+      <td><button class="btn-row-del" onclick="delRow(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
 
-  } else if (numCol === '센터번호') {
-    // ── 센터 관제
-    tbody.innerHTML = data.map((r,i) => `
-      <tr>
-        <td>${i+1}</td>
-        <td>${ci('출입증',r.출입증,'출입증')}</td>
-        <td>${ci('사번',r.사번,'사번')}</td>
-        <td>${ci('성명',r.성명,'성명')}</td>
-        <td>${ci('부서',r.부서,'부서')}</td>
-        <td>${ci('휴대폰',r.휴대폰,'휴대폰')}</td>
-        <td>${ci('권한',r.권한,'권한')}</td>
-        <td>${ci('센터번호',r.센터번호,'센터번호')}</td>
-        <td>${ci('비고',r.비고,'비고')}</td>
-        <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
-      </tr>`).join('');
+  // 직급 select 값 반영
+  rows.forEach((r,i) => {
+    const sels = tbody.querySelectorAll('select');
+    // 각 행 2개 select (type, rank) — rank는 index*2+1
+    const rankSel = sels[i*2+1];
+    if (rankSel && r.rank) rankSel.value = r.rank;
+  });
+}
 
-  } else {
-    // ── 송도 (기본)
-    tbody.innerHTML = data.map((r,i) => {
-      const vip = isN && isVIP(r.직급);
-      const rowStyle = vip ? 'background:#FFF0F0;border-left:3px solid #C0392B' : '';
-      return `
-      <tr style="${rowStyle}">
-        <td>${i+1}${vip?'<span style="color:#C0392B;font-size:10px;margin-left:2px">⚠️</span>':''}</td>
-        <td>${ci('출입증',r.출입증,'출입증')}</td>
-        <td>${ci('사번',r.사번,'사번')}</td>
-        <td>${ci('성명',r.성명,'성명')}</td>
-        <td>${ci('휴대폰',r.휴대폰,'휴대폰')}</td>
-        <td>${ci('송도번호',r.송도번호,'송도번호')}</td>
-        <td><button class="btn-row-del" onclick="delRow('${type}',${i})">✕</button></td>
-      </tr>`;
-    }).join('');
+function upd(i,f,v){ if(rows[i]) rows[i][f]=v; }
+function delRow(i){ rows.splice(i,1); renderTable(); }
+function esc(v){ return (v||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// ══════════════════════════════════════════
+//  SUBMIT
+// ══════════════════════════════════════════
+// 업무별 towerNo 계산 (rawCells or allNums 기반)
+function getTowerNoFor(r, site, work) {
+  const col = getTowerColFor(site, work);
+  if (r.rawCells && col !== null) return r.rawCells[col] || '';
+  if (r.allNums) {
+    const key = `${site}__${work}`;
+    if (key==='센터__관제') return r.allNums.센터;
+    if (key==='센터__식당') return r.allNums.센터식당;
+    if (key==='송도__통근버스'||key==='서울역__관제') return r.allNums.서울역;
+    return r.allNums.송도;
+  }
+  return r.towerNo || '';
+}
+
+async function submitForm() {
+  if (!curSite) { toast('사업장을 먼저 선택해주세요.','err'); return; }
+  if (selectedWorks.size === 0) { toast('업무를 하나 이상 선택해주세요.','err'); return; }
+  if (!rows.length) { toast('추가된 인원이 없습니다.','err'); return; }
+  const bad = rows.findIndex(r => !r.name || !r.empid);
+  if (bad >= 0) { toast(`${bad+1}번 행의 성명 또는 사번이 비어있습니다.`,'err'); return; }
+  const date = document.getElementById('n_date').value;
+  if (!date) { toast('요청일을 입력해주세요.','err'); return; }
+  const url = document.getElementById('cfgSubmit').value.trim();
+
+  const works = [...selectedWorks];
+  let successCount = 0;
+
+  toast(`⏳ ${works.length}개 업무 순차 전송 중...`, 'info');
+
+  for (const work of works) {
+    // 해당 업무 수신자
+    const rcpts = SITE_CONFIG[curSite]?.[work] || [];
+    const toList = rcpts.map(r=>r.email).filter(Boolean);
+    const ccSet = new Set();
+    rcpts.forEach(r => { if(r.cc) r.cc.split(';').forEach(c=>{const t=c.trim();if(t)ccSet.add(t);}); });
+    const ccList = [...ccSet];
+
+    // 업무별 towerNo 적용한 인원 목록
+    const workRows = rows.map(r => ({...r, towerNo: getTowerNoFor(r, curSite, work)}));
+    const regCount = workRows.filter(r=>r.type==='reg').length;
+    const delCount = workRows.filter(r=>r.type==='del').length;
+
+    const tableHtml = buildEmailTableFor(curSite, work, workRows);
+    const subject   = buildSubjectFor(curSite, work, regCount, delCount);
+    const body      = buildBodyFor(curSite, work, regCount, delCount, date, '', tableHtml);
+
+    const payload = {
+      사업장: curSite, 업무: work,
+      요청일: date,
+      수신자목록: toList,
+      참조목록: ccList,
+      제목: subject,
+      본문: body,
+      메일테이블HTML: tableHtml,
+      등록인원: regCount, 삭제인원: delCount,
+      인원목록: workRows.map(r=>({
+        사번:r.empid, 성명:r.name, 영문이름:r.engname, 직급:r.rank,
+        부서:r.dept, 휴대폰:r.phone, 번호:r.towerNo, 비고:r.note, 구분:r.type==='reg'?'등록':'삭제'
+      })),
+    };
+
+    if (!url) { console.log(`[${work}] payload`, payload); successCount++; continue; }
+
+    try {
+      const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+      if (res.ok || res.status===202) {
+        successCount++;
+        toast(`✅ [${work}] 등록 ${regCount}명 · 삭제 ${delCount}명 전송됨`, 'ok');
+      } else {
+        toast(`❌ [${work}] 전송 실패 (${res.status})`, 'err');
+      }
+    } catch(e) {
+      toast(`❌ [${work}] 오류: ${e.message}`, 'err');
+    }
+  }
+
+  if (!url) { toast(`⚠️ Flow URL 미설정 → 콘솔에서 payload 확인 (${works.length}개)`, 'warn'); return; }
+  if (successCount === works.length) {
+    toast(`✅ 전체 ${works.length}개 업무 전송 완료!`, 'ok');
+    resetAll();
   }
 }
 
-function upd(t,i,f,v){if(rows[t][i])rows[t][i][f]=v;}
-function delRow(t,i){rows[t].splice(i,1);renderTable(t);}
-function esc(v){return(v||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
-
-function showMsg(type,msg,kind){
-  const el=document.getElementById(type==='new'?'msgN':'msgD');
-  el.className=`lookup-msg ${kind==='ok'?'lm-ok':kind==='dup'?'lm-dup':'lm-no'} show`;
-  el.textContent=msg; clearTimeout(el._t); el._t=setTimeout(()=>{el.className='lookup-msg';},4000);
-}
-
-function addRcpt(id){
-  const wrap=document.getElementById(id),btn=wrap.querySelector('.rtag-add');
-  const tag=document.createElement('div');tag.className='rtag';
-  tag.innerHTML='<span class="rtlbl">TO</span><input type="email" placeholder="이메일 입력"/><button class="rtag-rm" onclick="this.parentElement.remove()">✕</button>';
-  wrap.insertBefore(tag,btn);tag.querySelector('input').focus();
-}
-
-function clearRcpt(id){
-  const wrap=document.getElementById(id);if(!wrap)return;
-  const btn=wrap.querySelector('.rtag-add');
-  [...wrap.querySelectorAll('.rtag')].forEach(t=>t.remove());
-  if(!btn){const b=document.createElement('button');b.className='rtag-add';b.setAttribute('onclick',`addRcpt('${id}')`);b.textContent='+ 직접 추가';wrap.appendChild(b);}
-}
-
-function getRcpts(id){
-  return [...document.querySelectorAll(`#${id} .rtag`)].map(t=>{
-    // 업체명 태그면 data-email, 일반 input이면 value
-    return t.dataset.email || t.querySelector('input[type=email]')?.value?.trim() || '';
-  }).filter(Boolean);
-}
-
-function resetAll(type){
-  const isN=type==='new',p=isN?'n':'d';
-  rows[type]=[];renderTable(type);
-  ['note'].concat(isN?[]:['reason']).forEach(f=>{const el=document.getElementById(`${p}_${f}`);if(el)el.value='';});
-  document.getElementById(isN?'msgN':'msgD').className='lookup-msg';
-  document.getElementById(isN?'sn_empid':'sd_empid').value='';
+// ══════════════════════════════════════════
+//  MISC
+// ══════════════════════════════════════════
+function resetAll() {
+  rows = [];
+  selectedWorks = new Set();
+  renderTable();
+  document.getElementById('n_date').value = today;
+  document.getElementById('n_card').value = '';
+  document.getElementById('n_note').value = '';
+  document.getElementById('sn_name').value = '';
+  document.getElementById('sn_empid').value = '';
+  document.getElementById('msgN').className = 'lmsg';
+  document.getElementById('pasteArea').value = '';
   toast('초기화되었습니다.','info');
 }
 
-// ── 제출
-async function submitForm(type){
-  const isN=type==='new',p=isN?'n':'d';
-  const active=Object.keys(selections);
-  if(!active.length){toast('사업장과 업무를 먼저 선택해주세요.','err');return;}
-  const date=new Date().toISOString().split('T')[0]; // 발송일 자동
-  const note='';
-  if(!isN&&!document.getElementById('d_reason').value){toast('삭제 사유를 선택해주세요.','err');return;}
-  if(!rows[type].length){toast('추가된 인원이 없습니다.','err');return;}
-  const bad=rows[type].findIndex(r=>!r.성명||!r.사번);
-  if(bad>=0){toast(`${bad+1}번 행의 성명 또는 사번이 비어있습니다.`,'err');return;}
-
-  const url=document.getElementById(isN?'cfgNew':'cfgDel').value.trim();
-
-  // 업무별 분리 발송 페이로드 (업무마다 메일 1통)
-  const sitePayloads=active.flatMap(site=>
-    [...selections[site]].map(work=>{
-      const cfg=SITE_CONFIG[site]?.[work]||{};
-      const emails=cfg.emails||[];
-      const ccs=(cfg.cc||[]).filter(e=>!emails.includes(e));
-      const numCol=cfg.numCol||'송도번호';
-      return {
-        사업장:site, 업무:work,
-        메일제목: (() => {
-          const hasVIP = rows[type].some(r=>isVIP(r.직급));
-          const base = `[포스코인터내셔널] 출입증 ${isN?'신규등록':'삭제요청'} 건 (${site} · ${work} / ${date})`;
-          return hasVIP ? `🚨 [긴급] ${base}` : base;
-        })(),
-        수신자목록:emails, cc목록:ccs,
-        번호컬럼:numCol, 번호컬럼라벨:NUM_LABELS[numCol]||numCol,
-        메일테이블HTML:buildEmailTable(type,site,work,numCol,date,note,isN?null:document.getElementById('d_reason').value),
-      };
-    })
-  );
-
-  const payload={
-    요청유형:isN?'신규등록':'삭제요청',
-    요청일:date,
-    인원목록:rows[type].map(r=>({출입증:r.출입증||'',직급:r.직급||'',사번:r.사번,성명:r.성명,부서:r.부서||'',휴대폰:r.휴대폰||'',송도번호:r.송도번호||'',센터번호:r.센터번호||'',센터식당번호:r.센터식당번호||'',구분:r.구분||'',권한:r.권한||'',비고:r.비고||''})),
-    업무별발송:sitePayloads,
-  };
-  if(!isN)payload.삭제사유=document.getElementById('d_reason').value;
-
-  if(!url){console.log('[payload]',payload);toast('⚠️ Flow URL 미설정 → 콘솔 확인','warn');return;}
-  toast('⏳ 전송 중...','info');
-  try{
-    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    if(res.ok||res.status===202){
-      toast(`✅ ${rows[type].length}명 ${isN?'신규등록':'삭제요청'} — ${sitePayloads.length}건 발송 완료`,'ok');
-      resetAll(type);
-    }else toast(`❌ 전송 실패 (${res.status})`,'err');
-  }catch(e){toast('❌ 오류: '+e.message,'err');}
+function showMsg(msg, kind) {
+  const el = document.getElementById('msgN');
+  const c = kind==='ok'?'lmsg-ok':kind==='dup'?'lmsg-warn':'lmsg-no';
+  el.className=`lmsg ${c} show`; el.textContent=msg;
+  clearTimeout(el._t); el._t=setTimeout(()=>{el.className='lmsg';},4500);
 }
 
-// ── 사업장별 메일 테이블
-// P7~P13 여부 체크
-function isVIP(rank) {
-  if (!rank) return false;
-  const m = rank.match(/P(\d+)/i);
-  if (m) { const n=parseInt(m[1]); return n>=7&&n<=13; }
-  return false;
+function focusLookup() {
+  document.getElementById('sn_name').focus();
+  document.getElementById('sn_name').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
-function buildEmailTable(type,site,work,numCol,date,note,reason){
-  const isN=type==='new';
-  const th=t=>`<th style="padding:9px 10px;font-weight:600;white-space:nowrap;background:#003087;color:#fff">${t}</th>`;
-  const td=t=>`<td style="padding:8px 10px">${t||''}</td>`;
-  const p='padding:8px 10px';
-
-  // VIP 체크 (신규만)
-  const vipRows = isN ? rows[type].filter(r=>isVIP(r.직급)) : [];
-  const hasVIP  = vipRows.length > 0;
-  const vipBanner = hasVIP ? `
-    <tr><td colspan="20" style="${p};background:#C0392B;color:#fff;font-weight:700;font-size:14px">
-      🚨 [긴급] P7~P13 등급 인원 포함 — 즉시 처리 요망 &nbsp;|&nbsp;
-      해당 인원: ${vipRows.map(r=>`${r.성명}(${r.직급})`).join(', ')}
-    </td></tr>` : '';
-
-  let header, body;
-
-  if (numCol === '센터식당번호') {
-    // 센터 식당
-    header = `<tr>${th('No.')}${th('사번')}${th('성명')}${th('식당번호')}${th('구분')}${th('비고')}</tr>`;
-    body = rows[type].map((r,i)=>{
-      const 구분val = r.구분 || '포스코인터내셔널';
-      const 비고val = isN ? (r.비고||'') : '삭제';
-      return `
-      <tr style="background:${i%2?'#F4F6FA':'#fff'}">
-        <td style="text-align:center;${p}">${i+1}</td>
-        ${td(r.사번)}${td(r.성명)}${td(r.센터식당번호)}${td(구분val)}${td(비고val)}
-      </tr>`;
-    }).join('');
-
-  } else if (numCol === '센터번호') {
-    // 센터 관제
-    header = `<tr>${th('No.')}${th('출입증')}${th('사번')}${th('성명')}${th('부서')}${th('휴대폰')}${th('권한')}${th('센터 No.')}${th('비고')}</tr>`;
-    body = rows[type].map((r,i)=>`
-      <tr style="background:${i%2?'#F4F6FA':'#fff'}">
-        <td style="text-align:center;${p}">${i+1}</td>
-        ${td(r.출입증)}${td(r.사번)}${td(r.성명)}${td(r.부서)}${td(r.휴대폰)}${td(r.권한)}${td(r.센터번호)}${td(r.비고)}
-      </tr>`).join('');
-
-  } else {
-    // 송도 (기본) — VIP 하이라이트 포함
-    header = `<tr>${th('No.')}${th('출입증')}${th('사번')}${th('성명')}${th('휴대폰')}${th('송도 No.')}</tr>`;
-    body = rows[type].map((r,i)=>{
-      const vip = isN && isVIP(r.직급);
-      const bg = vip ? '#FFF0F0' : (i%2?'#F4F6FA':'#fff');
-      const border = vip ? ';border-left:3px solid #C0392B' : '';
-      return `
-      <tr style="background:${bg}${border}">
-        <td style="text-align:center;${p}">${i+1}${vip?' ⚠️':''}</td>
-        ${td(r.출입증)}${td(r.사번)}${td(r.성명)}${td(r.휴대폰)}${td(r.송도번호)}
-      </tr>`;
-    }).join('');
-  }
-
-  const footer = `<tr style="background:#E8EEF7">
-    <td colspan="20" style="${p};font-size:12px;color:#5A6480">
-      <b>${site} · ${work}</b> &nbsp;|&nbsp; 요청유형: <b>${isN?'신규등록':'삭제요청'}</b> &nbsp;|&nbsp; 요청일: <b>${date}</b>
-      ${reason?` &nbsp;|&nbsp; 삭제사유: <b>${reason}</b>`:''}${note?` &nbsp;|&nbsp; 비고: ${note}`:''}
-    </td></tr>`;
-
-  return `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;width:100%">
-    <thead>${vipBanner}${header}</thead>
-    <tbody>${body}</tbody>
-    <tfoot>${footer}</tfoot>
-  </table>`;
+function setNavActive(el) {
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
 }
 
-function switchTab(t){const isN=t==='new';document.getElementById('pNew').style.display=isN?'':'none';document.getElementById('pDel').style.display=isN?'none':'';document.getElementById('tabNew').className='tab '+(isN?'on-new':'');document.getElementById('tabDel').className='tab '+(!isN?'on-del':'');}
-function toggleCfg(){document.getElementById('cfgPanel').classList.toggle('open');}
-function toast(msg,type='info'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast show t-${type}`;clearTimeout(el._t);el._t=setTimeout(()=>el.className='toast',3200);}
+function toggleCfg() {
+  document.getElementById('cfgPanel').classList.toggle('open');
+}
 
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>loadRecipients());}
-else{loadRecipients();}
+function toast(msg, type='info') {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast t-${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),280); }, 3500);
+}
+
+window.addEventListener('DOMContentLoaded', ()=>loadRecipients());
 </script>
 </body>
 </html>
