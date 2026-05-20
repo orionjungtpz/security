@@ -884,7 +884,10 @@ async function loadRecipients() {
       const work    = (item['OData__xc5c5__xbb34_'] || item['업무'] || '')?.trim();
       const company = (item['OData__xc5c5__xccb4__xba85_'] || item['업체명'] || '')?.trim();
       const rawEmail = (item['OData__xc218__xc2e0__xc790_'] || item['수신자'] || '')?.trim();
-      const rawCc   = (item['OData__xcc38__xc870_'] || item['참조'] || '')?.trim() || '';
+      const rawCc        = (item['OData__xcc38__xc870_'] || item['참조'] || '')?.trim() || '';
+      const manager      = (item['OData__xb2f4__xb2f9__xc790_'] || item['담당자'] || '')?.trim() || '';
+      const managerPhone = (item['OData__xc5f0__xb77d__xcc98_'] || item['담당자연락처'] || '')?.trim() || '';
+      const managerEmail = (item['OData__xb2f4__xb2f9__xc790__xc774__xba'] || item['담당자이메일'] || '')?.trim() || '';
       if (!site||!work||!rawEmail) return;
       if (!SITE_CONFIG[site]) SITE_CONFIG[site] = {};
       if (!SITE_CONFIG[site][work]) SITE_CONFIG[site][work] = [];
@@ -892,7 +895,7 @@ async function loadRecipients() {
       const emails = rawEmail.split(';').map(e=>e.trim()).filter(Boolean);
       emails.forEach(email => {
         if (!SITE_CONFIG[site][work].find(r=>r.email===email))
-          SITE_CONFIG[site][work].push({company, email, cc: rawCc});
+          SITE_CONFIG[site][work].push({company, email, cc: rawCc, manager, managerPhone, managerEmail});
       });
     });
     renderSiteButtons();
