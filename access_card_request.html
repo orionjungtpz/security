@@ -745,7 +745,7 @@ function buildEmailTableFor(site, work, targetRows) {
 
   const headerCells = cols.map(c => {
     const label = c === '송도번호' || c === '서울역번호' || c === '셔틀버스번호' || c === '센터번호' || c === '센터식당번호' ? towerHeader : c;
-    return `<th style="padding:9px 10px;background:#001d59;color:#fff;font-size:12px;font-weight:700;text-align:left;">${label}</th>`;
+    return `<th style="padding:9px 10px;background:#001d59;color:#fff;font-size:12px;font-weight:700;text-align:left;white-space:nowrap;">${label}</th>`;
   }).join('');
 
   const bodyRows = targetRows.map((r, i) => {
@@ -775,12 +775,12 @@ function buildEmailTableFor(site, work, targetRows) {
         }
         default: val = '';
       }
-      return `<td style="padding:8px 10px;font-size:13px;border-bottom:1px solid #e8e7ef;${execStyle}">${val}</td>`;
+      return `<td style="padding:8px 10px;font-size:13px;border-bottom:1px solid #e8e7ef;white-space:nowrap;${execStyle}">${val}</td>`;
     }).join('');
     return `<tr style="${rowStyle}">${cells}</tr>`;
   }).join('');
 
-  return `<table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;width:100%;max-width:800px;border:1px solid #c4c6d4;border-radius:8px;overflow:hidden;">
+  return `<table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;width:100%;max-width:1200px;border:1px solid #c4c6d4;border-radius:8px;overflow:hidden;">
     <thead><tr>${headerCells}</tr></thead>
     <tbody>${bodyRows}</tbody>
   </table>`;
