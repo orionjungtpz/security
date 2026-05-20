@@ -678,7 +678,7 @@ function getMailColumnsFor(site, work) {
 function getMailColumns() { const {site,work}=getFirstSiteWork(); return getMailColumnsFor(site,work); }
 
 // ── 제목 생성 ──
-function buildSubjectFor(site, work, regCount, delCount) {
+function buildSubjectFor(site, work, regCount, delCount, reregCount) {
   const key = `${site}__${work}`;
   // 근태 전용 제목
   if (key === '송도__근태') {
@@ -692,7 +692,7 @@ function buildSubjectFor(site, work, regCount, delCount) {
   }
   // 일반 제목
   const sitework = `${site || ''} ${work || ''}`.trim();
-  const reregCount2 = (typeof reregCount !== 'undefined') ? reregCount : 0;
+  const reregCount2 = reregCount || 0;
   const actions = [];
   const counts = [];
   if (regCount > 0) { actions.push('등록'); counts.push(`등록 ${regCount}건`); }
@@ -704,7 +704,7 @@ function buildSubjectFor(site, work, regCount, delCount) {
 }
 
 // ── 메일 본문 생성 ──
-function buildBodyFor(site, work, regCount, delCount, date, card, tableHtml, targetRows) {
+function buildBodyFor(site, work, regCount, delCount, reregCount, date, card, tableHtml, targetRows) {
   const cfg = getMailConfigFor(site, work);
   const key = `${site}__${work}`;
 
@@ -723,7 +723,7 @@ ${execNoticeK}${tableHtml}
   }
 
   // 일반 본문
-  const reregCount3 = (typeof reregCount !== 'undefined') ? reregCount : 0;
+  const reregCount3 = reregCount || 0;
   const actionParts = [];
   if (regCount > 0) actionParts.push('등록');
   if (reregCount3 > 0) actionParts.push('재등록');
@@ -1356,8 +1356,8 @@ async function submitForm() {
     const reregCount = workRows.filter(r=>r.type==='rereg').length;
 
     const tableHtml = buildEmailTableFor(site, work, workRows);
-    const subject   = buildSubjectFor(site, work, regCount, delCount);
-    const body      = buildBodyFor(site, work, regCount, delCount, date, '', tableHtml, workRows);
+    const subject   = buildSubjectFor(site, work, regCount, delCount, reregCount);
+    const body      = buildBodyFor(site, work, regCount, delCount, reregCount, date, '', tableHtml, workRows);
 
     const payload = {
       사업장: site, 업무: work,
