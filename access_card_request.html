@@ -58,9 +58,10 @@ main{flex:1;overflow-y:auto;padding:28px 32px;}
 /* Rcpt preview */
 .rcpt-preview{display:none;background:#eef4ff;border:1px solid #aac7ff;border-radius:8px;padding:8px 10px;margin-top:8px;flex-direction:column;gap:6px;}
 .rcpt-preview.show{display:flex;}
-.rcpt-item{display:flex;align-items:baseline;gap:6px;font-size:11px;}
-.rcpt-item .co{font-weight:700;color:#1d5daf;white-space:nowrap;min-width:60px;}
-.rcpt-item .em{color:#444652;word-break:break-all;}
+.rcpt-item{display:flex;flex-direction:column;gap:2px;font-size:11px;padding:4px 0;border-bottom:1px solid #e8e7ef;}
+.rcpt-item:last-child{border-bottom:none;}
+.rcpt-item .co{font-weight:700;color:#1d5daf;white-space:nowrap;}
+.rcpt-item .em{color:#444652;word-break:break-all;font-size:10px;}
 
 /* Nav item */
 .nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;margin:2px 8px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;color:#444652;font-family:'Noto Sans KR',sans-serif;}
@@ -1037,19 +1038,23 @@ function renderRcptPreview(rcpts) {
   box.innerHTML = Object.entries(grouped).map(([co, emails]) =>
     emails.map(em => `
       <div class="rcpt-item">
-        <span class="co" style="color:#1d5daf;">TO</span>
-        <span class="co">${co||''}</span>
+        <span class="co"><span style="color:#b0b4c4;font-size:9px;font-weight:700;background:#dbe1ff;border-radius:3px;padding:1px 4px;margin-right:4px;">TO</span>${co||''}</span>
         <span class="em">${em}</span>
       </div>`).join('')
   ).join('');
   // CC
   const ccList = [...new Set(rcpts.map(r=>r.cc).filter(Boolean))];
   if (ccList.length) {
-    box.innerHTML += ccList.map(cc => `
-      <div class="rcpt-item">
-        <span class="co" style="color:#747683;">CC</span>
+    // CC 세미콜론 구분 → 각각 한 줄씩
+    const allCcEmails = [...new Set(ccList.flatMap(cc => cc.split(';').map(c=>c.trim()).filter(Boolean)))];
+    allCcEmails.forEach((cc, i) => {
+      box.innerHTML += `<div class="rcpt-item">
+        <span class="co">
+          ${i===0 ? '<span style="color:#747683;font-size:9px;font-weight:700;background:#e3e2ea;border-radius:3px;padding:1px 4px;margin-right:4px;">CC</span>' : '<span style="display:inline-block;width:24px;"></span>'}
+        </span>
         <span class="em" style="color:#747683;">${cc}</span>
-      </div>`).join('');
+      </div>`;
+    });
   }
   wrap.style.display = '';
 }
