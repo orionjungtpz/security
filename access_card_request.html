@@ -769,9 +769,10 @@ function buildBodyFor(site, work, regCount, delCount, reregCount, date, card, ta
     const execNoticeK = hasExecK ? `<p style="color:#b8860b;font-weight:bold;">※ 등록 인원 중 임원이 포함되어 있으니 빠른 처리 부탁드립니다.</p>` : '';
     const cfgK = getMailConfigFor(site, work);
     const contactLineK = [cfgK.phone, cfgK.replyTo].filter(Boolean).join(' / ');
-    return `<p>본 메일은 포스코인터내셔널 관리자로부터 자동발송되었습니다.<br>회신시, [회신 또는 답장]을 선택하시면 담당자(${cfgK.manager}) 메일주소로 자동 연결됩니다.${contactLineK ? `<br>문의사항 있으시면 담당자에게 (${contactLineK}) 연락부탁드립니다.` : ''}</p>
-<p>안녕하세요, 포스코휴먼스 사원증 제작 담당자입니다.<br>아래와 같이 포스코인터내셔널 출입증을 ${action}하여 정보 전달드리오니 업무에 참고부탁드립니다.</p>
+    return `<p>본 메일은 포스코인터내셔널 관리자로부터 자동발송되었습니다.</p>
+<p>안녕하세요, 포스코휴먼스 ${cfgK.manager}입니다.<br>아래와 같이 포스코인터내셔널 출입증을 ${action}하여 정보 전달드리오니 업무에 참고부탁드립니다.</p>
 ${execNoticeK}${tableHtml}
+<p>회신시, [회신 또는 답장]을 선택하시면 담당자 메일주소로 자동 연결됩니다.${contactLineK ? `<br>문의사항은 담당자에게 (${contactLineK}) 연락부탁드립니다.` : ''}</p>
 <p>감사합니다.</p>`;
   }
 
@@ -786,9 +787,10 @@ ${execNoticeK}${tableHtml}
   const hasExec = targetRows.some(r => r.isExec && r.type !== 'del');
   const execNotice = hasExec ? `<p style="color:#b8860b;font-weight:bold;">※ 등록 인원 중 임원이 포함되어 있으니 빠른 처리 부탁드립니다.</p>` : '';
   const contactLine = [cfg.phone, cfg.replyTo].filter(Boolean).join(' / ');
-  return `<p>본 메일은 포스코인터내셔널 관리자로부터 자동발송되었습니다.<br>회신시, [회신 또는 답장]을 선택하시면 담당자(${cfg.manager}) 메일주소로 자동 연결됩니다.${contactLine ? `<br>문의사항 있으시면 담당자에게 (${contactLine}) 연락부탁드립니다.` : ''}</p>
+  return `<p>본 메일은 포스코인터내셔널 관리자로부터 자동발송되었습니다.</p>
 <p>안녕하세요, 포스코휴먼스 ${cfg.manager}입니다.<br>아래 포스코인터내셔널 ${sitework} 권한 ${action}을 요청드립니다.<br>완료 후 회신 부탁드립니다.</p>
 ${execNotice}${tableHtml}
+<p>회신시, [회신 또는 답장]을 선택하시면 담당자 메일주소로 자동 연결됩니다.${contactLine ? `<br>문의사항은 담당자에게 (${contactLine}) 연락부탁드립니다.` : ''}</p>
 <p>감사합니다.</p>`;
 }
 
@@ -856,21 +858,7 @@ document.getElementById('hdate').textContent =
 async function loadRecipients() {
   const url = document.getElementById('cfgRecipients').value.trim();
   if (!url) {
-    SITE_CONFIG = {
-      '송도': {
-        '관제':           [{company:'포스코와이드', email:'sugjin0@poscowide.com', cc:'', manager:'', managerPhone:'', managerEmail:''}],
-        '9층 카페':       [{company:'송도SE', email:'Lilka882@gmail.com', cc:'', manager:'', managerPhone:'', managerEmail:''},{company:'송도SE', email:'chjh0920@songdose.co.kr', cc:'', manager:'', managerPhone:'', managerEmail:''}],
-        '12층 식당/카페': [{company:'아워홈', email:'hj2731.an@ourhome.co.kr', cc:'', manager:'', managerPhone:'', managerEmail:''}],
-      },
-      '센터': {
-        '식당': [{company:'삼성웰스토리', email:'jina214.kim@samsung.com', cc:'', manager:'', managerPhone:'', managerEmail:''}],
-        '관제': [{company:'포스코와이드', email:'jinwoo4064@poscowide.com', cc:'', manager:'', managerPhone:'', managerEmail:''},{company:'포스코와이드', email:'jjin6842@poscowide.com', cc:'', manager:'', managerPhone:'', managerEmail:''},{company:'포스코와이드', email:'dongwo3@poscowide.com', cc:'', manager:'', managerPhone:'', managerEmail:''}],
-      },
-      '서울역': {
-        '1층 스피드게이트': [{company:'에스원', email:'zhqkddh@naver.com', cc:'', manager:'', managerPhone:'', managerEmail:''}],
-      },
-    };
-    renderSiteButtons();
+    document.getElementById('siteTree').innerHTML = '<span style="font-size:11px;color:#ba1a1a;padding:4px 10px;display:block;">⚠️ 시스템 설정에서 수신자 목록 Flow URL을 입력해주세요</span>';
     return;
   }
   document.getElementById('siteTree').innerHTML = '<span style="font-size:11px;color:#b0b4c4;padding:4px 10px;display:block;">⏳ 불러오는 중...</span>';
