@@ -579,7 +579,7 @@ let rawPasteRows = [];  // 엑셀 원본 데이터 (재매핑용)
 const RANKS = ['사원','대리','과장','차장','부장','수석','임원','기타'];
 
 // 엑셀 열 인덱스 (0-based, A=0)
-const COL = { NO:0, DATE:1, CARD:2, EMPID:3, NAME:4, ENGNAME:5, RANK:6, DEPT:7, PHONE:8, SONGDO:9, CENTER:10, SHUTTLE_SEOUL:11, CENTER_DINING:12, NOTE:13, EXEC:14 };
+const COL = { NO:0, DATE:1, CARD:2, EMPID:3, NAME:4, ENGNAME:5, RANK:6, DEPT:7, PHONE:8, SONGDO:9, CENTER:10, SHUTTLE_SEOUL:11, CENTER_DINING:12, NOTE:13, EXEC:14, ENTRY_AUTH:15 };
 
 // 사업장+업무 → 타워번호 열 매핑
 function getTowerColFor(site, work) {
@@ -664,13 +664,13 @@ function getMailColumnsFor(site, work) {
     '송도__근태':           ['출입증','사번','성명','구분','휴대폰','송도번호','비고'],
     '송도__통근버스':       ['출입증','요청일','사번','성명','구분','부서','휴대폰','셔틀버스번호','등록삭제'],
     '서울역__1층 스피드게이트':         ['출입증','요청일','사번','성명','구분','부서','휴대폰','서울역번호','등록삭제'],
-    '센터__관제':           ['출입증','사번','성명','구분','부서','휴대폰','권한','센터번호','비고','등록삭제'],
+    '센터__관제':           ['출입증','사번','성명','구분','부서','휴대폰','권한','센터번호','출입권한','비고','등록삭제'],
     '센터__식당':           ['사번','성명','구분','센터식당번호','등록삭제'],
     'test__test':           ['출입증','요청일','사번','성명','구분','부서','휴대폰','송도번호','등록삭제'],
     'Test__송도':           ['출입증','요청일','사번','성명','구분','부서','휴대폰','송도번호','등록삭제'],
     'Test__통근버스':       ['출입증','요청일','사번','성명','구분','부서','휴대폰','셔틀버스번호','등록삭제'],
     'Test__서울역 관제':    ['출입증','요청일','사번','성명','구분','부서','휴대폰','서울역번호','등록삭제'],
-    'Test__센터관제':       ['출입증','사번','성명','구분','부서','휴대폰','권한','센터번호','비고','등록삭제'],
+    'Test__센터관제':       ['출입증','사번','성명','구분','부서','휴대폰','권한','센터번호','출입권한','비고','등록삭제'],
     'Test__센터식당':       ['사번','성명','구분','센터식당번호','등록삭제'],
   };
   return maps[key] ?? ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'];
@@ -764,6 +764,7 @@ function buildEmailTableFor(site, work, targetRows) {
         case '송도번호': case '서울역번호': case '셔틀버스번호': case '센터번호': case '센터식당번호': case '번호': val = r.towerNo || ''; break;
         case '구분': val = r.isExec ? '임원' : '일반'; break;
         case '등록삭제': val = r.type === 'reg' ? '등록' : r.type === 'rereg' ? '재등록' : '삭제'; break;
+        case '출입권한': val = r.entryAuth || ''; break;
         case '비고': {
           const key2 = `${site}__${work}`;
           if (key2 === '송도__근태') val = r.type === 'reg' ? (r.note||'') : '삭제';
@@ -1136,7 +1137,8 @@ function processPasteText(text) {
       센터식당: cells[COL.CENTER_DINING] || '',
     };
     const isExec = (cells[COL.EXEC] || '').trim().toUpperCase() === 'O';
-    rows.push({ empid, name, engname, rank, dept, phone, nums, note, card, date, type:'reg', rawCells, isExec });
+    const entryAuth = cells[COL.ENTRY_AUTH] || '';
+    rows.push({ empid, name, engname, rank, dept, phone, nums, note, card, date, type:'reg', rawCells, isExec, entryAuth });
     added++;
   });
 
@@ -1161,6 +1163,7 @@ function buildRowFromEmployee(e) {
     nums: {송도:e.송도번호||'', 센터:e.센터번호||'', 셔틀:e.서울역번호||'', 센터식당:e.센터식당번호||''},
     type:'reg', card: e.출입증||'', date: document.getElementById('n_date').value, note:'',
     isExec: (e.임원여부||'').trim().toUpperCase() === 'O',
+    entryAuth: e.출입권한||'',
   };
 }
 
@@ -1409,7 +1412,7 @@ function showConfirm(keyword) {
 function confirmOk() {
   closeConfirm();
   const date = document.getElementById('n_date').value;
-  rows.push({empid:_confirmPendingEmpid, name:_confirmPendingName, engname:'', rank:'', dept:'', phone:'', nums:{송도:'',센터:'',셔틀:'',센터식당:''}, type:'reg', card:'', date, note:'', isExec:false});
+  rows.push({empid:_confirmPendingEmpid, name:_confirmPendingName, engname:'', rank:'', dept:'', phone:'', nums:{송도:'',센터:'',셔틀:'',센터식당:''}, type:'reg', card:'', date, note:'', isExec:false, entryAuth:''});
   renderTable();
   showMsg('빈 행이 추가됐습니다. 직접 입력해주세요.','no');
   document.getElementById('sn_name').value = '';
