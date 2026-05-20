@@ -749,7 +749,9 @@ function buildEmailTableFor(site, work, targetRows) {
   }).join('');
 
   const bodyRows = targetRows.map((r, i) => {
-    const execStyle = r.isExec && r.type !== 'del' ? 'font-weight:bold;color:#1a1b21;' : '';
+    const isExecReg = r.isExec && r.type !== 'del';
+    const rowStyle = isExecReg ? 'background:#fffbeb;' : (i%2 ? 'background:#f8faff;' : 'background:#fff;');
+    const execStyle = isExecReg ? 'font-weight:bold;color:#1a1b21;' : '';
     const cells = cols.map(c => {
       let val = '';
       switch(c) {
