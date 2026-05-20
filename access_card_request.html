@@ -184,6 +184,33 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
 .toast.t-warn{border-left-color:#e65100;}
 .toast.t-info{border-left-color:#1d5daf;}
 
+/* ── 메일 미리보기 패널 ── */
+.preview-panel{width:0;flex-shrink:0;overflow:hidden;transition:width .3s ease;background:#f4f3fb;border-left:1px solid #c4c6d4;display:flex;flex-direction:column;height:100%;}
+.preview-panel.open{width:420px;}
+.preview-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #c4c6d4;background:#fff;flex-shrink:0;}
+.preview-header-title{font-size:13px;font-weight:700;color:#001d59;}
+.preview-close{background:none;border:none;cursor:pointer;color:#747683;font-size:20px;line-height:1;padding:2px 6px;border-radius:4px;transition:all .15s;}
+.preview-close:hover{background:#e8e7ef;color:#1a1b21;}
+.preview-tabs{display:flex;gap:0;border-bottom:1px solid #c4c6d4;background:#fff;flex-shrink:0;overflow-x:auto;}
+.preview-tab{flex-shrink:0;padding:8px 14px;font-size:12px;font-weight:500;color:#747683;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;transition:all .15s;}
+.preview-tab.active{color:#001d59;font-weight:700;border-bottom-color:#001d59;}
+.preview-body{flex:1;overflow-y:auto;padding:16px;}
+.outlook-wrap{background:#fff;border:1px solid #c4c6d4;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.outlook-toolbar{background:#0078d4;padding:6px 12px;display:flex;align-items:center;gap:8px;}
+.outlook-toolbar-btn{background:rgba(255,255,255,.15);border:none;border-radius:4px;padding:3px 10px;color:#fff;font-size:11px;font-family:'Noto Sans KR',sans-serif;font-weight:600;}
+.outlook-meta{padding:12px 16px;border-bottom:1px solid #e8e7ef;}
+.outlook-meta-row{display:flex;gap:8px;margin-bottom:6px;font-size:12px;}
+.outlook-meta-row:last-child{margin-bottom:0;}
+.outlook-meta-label{font-weight:700;color:#747683;min-width:32px;flex-shrink:0;}
+.outlook-meta-value{color:#1a1b21;word-break:break-all;font-size:12px;}
+.outlook-subject{padding:12px 16px;border-bottom:1px solid #e8e7ef;font-size:13px;font-weight:700;color:#1a1b21;}
+.outlook-content{padding:16px;font-size:12px;line-height:1.8;color:#1a1b21;}
+.preview-empty{text-align:center;padding:40px 20px;color:#b0b4c4;font-size:13px;}
+.preview-empty .material-symbols-outlined{font-size:36px;display:block;margin:0 auto 10px;opacity:.4;}
+.preview-toggle-btn{display:flex;align-items:center;gap:6px;background:#eeedf5;border:1px solid #c4c6d4;border-radius:8px;padding:6px 12px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;color:#001d59;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.preview-toggle-btn:hover{background:#e8e7ef;}
+.preview-toggle-btn.active{background:#dbe1ff;border-color:#1d5daf;}
+
 /* Spinner */
 .spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -340,6 +367,10 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
     <span id="hdate" style="font-size:12px;color:#747683;font-variant-numeric:tabular-nums;margin-right:4px;"></span>
     <button class="mob-menu-btn" onclick="toggleMobileSidebar()">
       <span class="material-symbols-outlined" style="font-size:18px;">menu</span> 사업장
+    </button>
+    <button class="preview-toggle-btn" id="previewToggleBtn" onclick="togglePreview()">
+      <span class="material-symbols-outlined" style="font-size:16px;">mail_outline</span>
+      메일 미리보기
     </button>
     <button class="icon-btn"><span class="material-symbols-outlined" style="font-size:21px;">notifications</span></button>
     <button class="icon-btn"><span class="material-symbols-outlined" style="font-size:21px;">account_circle</span></button>
@@ -539,6 +570,25 @@ select.f-input{-webkit-appearance:none;background-image:url("data:image/svg+xml,
   </div>
 
 </main>
+
+  <!-- 메일 미리보기 패널 -->
+  <div class="preview-panel" id="previewPanel">
+    <div class="preview-header">
+      <span class="preview-header-title">
+        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px;margin-right:4px;">mail_outline</span>
+        메일 미리보기
+      </span>
+      <button class="preview-close" onclick="togglePreview()">&#10005;</button>
+    </div>
+    <div class="preview-tabs" id="previewTabs"></div>
+    <div class="preview-body" id="previewBody">
+      <div class="preview-empty">
+        <span class="material-symbols-outlined">mail_outline</span>
+        사업장&#183;업무 선택 후<br>인원을 추가하면<br>메일 미리보기가 표시됩니다
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- 조회결과 없음 확인 팝업 -->
@@ -1273,6 +1323,7 @@ function renderTable() {
   document.getElementById('actInfo').textContent = rows.length
     ? `총 ${rows.length}명 (${parts.join(' · ')}) · 전송 전 내용을 확인해주세요`
     : '인원을 추가한 후 전송하세요';
+  refreshPreviewIfOpen();
 
   if (!rows.length) {
     tbody.innerHTML='<tr><td colspan="14"><div class="tbl-empty"><span class="material-symbols-outlined" style="font-size:28px;display:block;margin:0 auto 8px;opacity:.35;">person_search</span>직원 조회 또는 엑셀 붙여넣기로 인원을 추가하세요</div></td></tr>';
@@ -1463,6 +1514,166 @@ function setNavActive(el) {
 
 function toggleCfg() {
   document.getElementById('cfgPanel').classList.toggle('open');
+}
+
+// ── 메일 미리보기 ──
+let previewWorkIdx = 0;
+
+function togglePreview() {
+  const panel = document.getElementById('previewPanel');
+  const btn = document.getElementById('previewToggleBtn');
+  const isOpen = panel.classList.toggle('open');
+  btn.classList.toggle('active', isOpen);
+  if (isOpen) renderPreview();
+}
+
+function renderPreview() {
+  const works = [...selectedWorks];
+  const tabsEl = document.getElementById('previewTabs');
+  const bodyEl = document.getElementById('previewBody');
+
+  if (!works.length || !rows.length) {
+    tabsEl.innerHTML = '';
+    bodyEl.innerHTML = '<div class="preview-empty"><span class="material-symbols-outlined">mail_outline</span>사업장&#183;업무 선택 후<br>인원을 추가하면<br>메일 미리보기가 표시됩니다</div>';
+    return;
+  }
+
+  if (previewWorkIdx >= works.length) previewWorkIdx = 0;
+
+  // 탭 렌더링
+  tabsEl.innerHTML = works.map((key, i) => {
+    const [site, work] = key.split('||');
+    return `<button class="preview-tab ${i===previewWorkIdx?'active':''}" onclick="previewWorkIdx=${i};renderPreview()">${site} ${work}</button>`;
+  }).join('');
+
+  // 선택된 업무 미리보기
+  const key = works[previewWorkIdx];
+  const [site, work] = key.split('||');
+  const workRows = rows.map(r => ({...r, towerNo: getTowerNoFor(r, site, work)}));
+  const regCount = workRows.filter(r=>r.type==='reg').length;
+  const delCount = workRows.filter(r=>r.type==='del').length;
+  const reregCount = workRows.filter(r=>r.type==='rereg').length;
+
+  const rcpts = SITE_CONFIG[site]?.[work] || [];
+  const toList = rcpts.map(r=>r.email).filter(Boolean);
+  const ccSet = new Set();
+  rcpts.forEach(r => { if(r.cc) r.cc.split(';').forEach(c=>{const t=c.trim();if(t)ccSet.add(t);}); });
+  const ccList = [...ccSet];
+  const cfg = getMailConfigFor(site, work);
+
+  const subject = buildSubjectFor(site, work, regCount, delCount, reregCount);
+  const tableHtml = buildEmailTableFor(site, work, workRows);
+  const body = buildBodyFor(site, work, regCount, delCount, reregCount, '', '', tableHtml, workRows);
+
+  // 본문에서 표 분리
+  const tableMatch = body.match(/(<table[\s\S]*?<\/table>)/);
+  const tableHtmlPart = tableMatch ? tableMatch[1] : '';
+  const bodyWithoutTable = body.replace(tableHtmlPart, '__TABLE__');
+  const bodyParts = bodyWithoutTable.split('__TABLE__');
+  const bodyBefore = bodyParts[0] || '';
+  const bodyAfter = bodyParts[1] || '';
+
+  bodyEl.innerHTML = `
+    <div class="outlook-wrap">
+      <div class="outlook-toolbar">
+        <span class="outlook-toolbar-btn">&#128394; 회신</span>
+        <span class="outlook-toolbar-btn">&#8614; 전달</span>
+      </div>
+      <div class="outlook-meta">
+        <div class="outlook-meta-row">
+          <span class="outlook-meta-label">보낸이</span>
+          <span class="outlook-meta-value">포스코인터내셔널 관리자</span>
+        </div>
+        <div class="outlook-meta-row">
+          <span class="outlook-meta-label">받는이</span>
+          <span class="outlook-meta-value">${toList.join('; ') || '(수신자 없음)'}</span>
+        </div>
+        ${ccList.length ? `<div class="outlook-meta-row">
+          <span class="outlook-meta-label">참조</span>
+          <span class="outlook-meta-value">${ccList.join('; ')}</span>
+        </div>` : ''}
+        <div class="outlook-meta-row">
+          <span class="outlook-meta-label">답장</span>
+          <span class="outlook-meta-value">${cfg.replyTo}</span>
+        </div>
+      </div>
+      <div class="outlook-subject-wrap" style="padding:12px 16px;border-bottom:1px solid #e8e7ef;">
+        <div style="font-size:10px;font-weight:700;color:#b0b4c4;margin-bottom:4px;letter-spacing:.05em;">제목</div>
+        <input id="previewSubject" type="text" value="${subject.replace(/"/g,'&quot;')}"
+          style="width:100%;border:1px solid #e8e7ef;border-radius:6px;padding:7px 10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;color:#1a1b21;outline:none;transition:border-color .15s;"
+          onfocus="this.style.borderColor='#1d5daf'" onblur="this.style.borderColor='#e8e7ef'"/>
+      </div>
+      <div class="outlook-content" style="padding:0;">
+        <div id="previewBodyBefore" contenteditable="true"
+          style="padding:16px 16px 8px;font-size:12px;line-height:1.8;color:#1a1b21;outline:none;min-height:40px;border-bottom:1px dashed #e8e7ef;"
+          onfocus="this.style.background='#fafbff'" onblur="this.style.background='transparent'"
+        >${bodyBefore}</div>
+        <div style="padding:8px 16px;overflow-x:auto;">${tableHtmlPart}</div>
+        <div id="previewBodyAfter" contenteditable="true"
+          style="padding:8px 16px 16px;font-size:12px;line-height:1.8;color:#1a1b21;outline:none;min-height:30px;"
+          onfocus="this.style.background='#fafbff'" onblur="this.style.background='transparent'"
+        >${bodyAfter}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button onclick="resetPreview()" style="flex:1;background:#eeedf5;border:1px solid #c4c6d4;border-radius:8px;padding:9px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:600;color:#444652;cursor:pointer;">
+        ↺ 원래대로
+      </button>
+      <button onclick="sendFromPreview('${key}')" style="flex:2;background:#001d59;border:none;border-radius:8px;padding:9px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:15px;">send</span> 이 내용으로 전송
+      </button>
+    </div>`;
+  // 현재 미리보기 데이터 저장
+  window._previewData = window._previewData || {};
+  window._previewData[key] = { site, work, toList, ccList, cfg, tableHtml, workRows, regCount, delCount, reregCount };
+}
+
+// 테이블/업무 변경 시 미리보기 자동 갱신
+function refreshPreviewIfOpen() {
+  if (document.getElementById('previewPanel').classList.contains('open')) {
+    renderPreview();
+  }
+}
+
+function resetPreview() {
+  renderPreview();
+}
+
+async function sendFromPreview(key) {
+  const d = window._previewData?.[key];
+  if (!d) { toast('미리보기 데이터 없음','err'); return; }
+
+  // 편집된 제목/본문 읽기
+  const editedSubject = document.getElementById('previewSubject')?.value || '';
+  const editedBefore = document.getElementById('previewBodyBefore')?.innerHTML || '';
+  const editedAfter = document.getElementById('previewBodyAfter')?.innerHTML || '';
+  const editedBody = editedBefore + d.tableHtml + editedAfter;
+
+  const url = document.getElementById('cfgSubmit').value.trim();
+  const payload = {
+    사업장: d.site, 업무: d.work,
+    요청일: document.getElementById('n_date').value,
+    수신자목록: d.toList,
+    참조목록: d.ccList,
+    replyTo: d.cfg.replyTo,
+    제목: editedSubject,
+    본문: editedBody,
+    메일테이블HTML: d.tableHtml,
+    등록인원: d.regCount, 삭제인원: d.delCount, 재등록인원: d.reregCount,
+    인원목록: d.workRows.map(r=>({
+      사번:r.empid, 성명:r.name, 영문이름:r.engname, 직급:r.rank,
+      부서:r.dept, 휴대폰:r.phone, 번호:r.towerNo, 비고:r.note, 구분:r.type==='reg'?'등록':r.type==='rereg'?'재등록':'삭제'
+    })),
+  };
+
+  if (!url) { console.log('[preview payload]', payload); toast('⚠️ Flow URL 미설정','warn'); return; }
+  toast(`⏳ [${d.site} · ${d.work}] 전송 중...`, 'info');
+  try {
+    const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    if (res.ok || res.status===202) {
+      toast(`✅ [${d.site} · ${d.work}] 전송 완료`, 'ok');
+    } else toast(`❌ 전송 실패 (${res.status})`, 'err');
+  } catch(e) { toast('오류: '+e.message,'err'); }
 }
 
 function toggleMobileSidebar() {
