@@ -657,21 +657,21 @@ function getMailConfig() { const {site,work}=getFirstSiteWork(); return getMailC
 function getMailColumnsFor(site, work) {
   const key = `${site}__${work}`;
   const maps = {
-    '송도__관제':           ['출입증','요청일','사번','성명','부서','휴대폰','송도번호','등록삭제'],
-    '송도__9층 카페':       ['출입증','요청일','사번','성명','부서','휴대폰','송도번호','등록삭제'],
-    '송도__9층 회의실':     ['출입증','요청일','사번','성명','부서','휴대폰','송도번호','등록삭제'],
-    '송도__12층 식당/카페': ['출입증','요청일','사번','성명','부서','휴대폰','송도번호','등록삭제'],
-    '송도__근태':           ['출입증','사번','성명','휴대폰','송도번호','비고'],
-    '송도__통근버스':       ['출입증','요청일','사번','성명','부서','휴대폰','셔틀버스번호','등록삭제'],
-    '서울역__1층 스피드게이트':         ['출입증','요청일','사번','성명','부서','휴대폰','서울역번호','등록삭제'],
-    '센터__관제':           ['출입증','사번','성명','부서','휴대폰','권한','센터번호','비고','등록삭제'],
-    '센터__식당':           ['사번','성명','센터식당번호','구분','등록삭제'],
-    'test__test':           ['출입증','요청일','사번','성명','부서','휴대폰','송도번호','등록삭제'],
-    'Test__송도':           ['출입증','요청일','사번','성명','부서','휴대폰','송도번호','등록삭제'],
-    'Test__통근버스':       ['출입증','요청일','사번','성명','부서','휴대폰','셔틀버스번호','등록삭제'],
-    'Test__서울역 관제':    ['출입증','요청일','사번','성명','부서','휴대폰','서울역번호','등록삭제'],
-    'Test__센터관제':       ['출입증','사번','성명','부서','휴대폰','권한','센터번호','비고','등록삭제'],
-    'Test__센터식당':       ['사번','성명','센터식당번호','구분','등록삭제'],
+    '송도__관제':           ['출입증','요청일','사번','성명','구분','부서','휴대폰','송도번호','등록삭제'],
+    '송도__9층 카페':       ['출입증','요청일','사번','성명','구분','부서','휴대폰','송도번호','등록삭제'],
+    '송도__9층 회의실':     ['출입증','요청일','사번','성명','구분','부서','휴대폰','송도번호','등록삭제'],
+    '송도__12층 식당/카페': ['출입증','요청일','사번','성명','구분','부서','휴대폰','송도번호','등록삭제'],
+    '송도__근태':           ['출입증','사번','성명','구분','휴대폰','송도번호','비고'],
+    '송도__통근버스':       ['출입증','요청일','사번','성명','구분','부서','휴대폰','셔틀버스번호','등록삭제'],
+    '서울역__1층 스피드게이트':         ['출입증','요청일','사번','성명','구분','부서','휴대폰','서울역번호','등록삭제'],
+    '센터__관제':           ['출입증','사번','성명','구분','부서','휴대폰','권한','센터번호','비고','등록삭제'],
+    '센터__식당':           ['사번','성명','구분','센터식당번호','등록삭제'],
+    'test__test':           ['출입증','요청일','사번','성명','구분','부서','휴대폰','송도번호','등록삭제'],
+    'Test__송도':           ['출입증','요청일','사번','성명','구분','부서','휴대폰','송도번호','등록삭제'],
+    'Test__통근버스':       ['출입증','요청일','사번','성명','구분','부서','휴대폰','셔틀버스번호','등록삭제'],
+    'Test__서울역 관제':    ['출입증','요청일','사번','성명','구분','부서','휴대폰','서울역번호','등록삭제'],
+    'Test__센터관제':       ['출입증','사번','성명','구분','부서','휴대폰','권한','센터번호','비고','등록삭제'],
+    'Test__센터식당':       ['사번','성명','구분','센터식당번호','등록삭제'],
   };
   return maps[key] ?? ['출입증','요청일','사번','성명','부서','휴대폰','송도번호'];
 }
@@ -749,6 +749,7 @@ function buildEmailTableFor(site, work, targetRows) {
   }).join('');
 
   const bodyRows = targetRows.map((r, i) => {
+    const execStyle = r.isExec && r.type !== 'del' ? 'font-weight:bold;color:#1a1b21;' : '';
     const cells = cols.map(c => {
       let val = '';
       switch(c) {
@@ -761,7 +762,7 @@ function buildEmailTableFor(site, work, targetRows) {
         case '부서': val = r.dept || ''; break;
         case '휴대폰': val = r.phone || ''; break;
         case '송도번호': case '서울역번호': case '셔틀버스번호': case '센터번호': case '센터식당번호': case '번호': val = r.towerNo || ''; break;
-        case '구분': val = '포스코인터내셔널'; break;
+        case '구분': val = r.isExec ? '임원' : '일반'; break;
         case '등록삭제': val = r.type === 'reg' ? '등록' : r.type === 'rereg' ? '재등록' : '삭제'; break;
         case '비고': {
           const key2 = `${site}__${work}`;
@@ -771,9 +772,9 @@ function buildEmailTableFor(site, work, targetRows) {
         }
         default: val = '';
       }
-      return `<td style="padding:8px 10px;font-size:13px;border-bottom:1px solid #e8e7ef;">${val}</td>`;
+      return `<td style="padding:8px 10px;font-size:13px;border-bottom:1px solid #e8e7ef;${execStyle}">${val}</td>`;
     }).join('');
-    return `<tr style="background:${i%2?'#f8faff':'#fff'}">${cells}</tr>`;
+    return `<tr style="${rowStyle}">${cells}</tr>`;
   }).join('');
 
   return `<table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;width:100%;max-width:800px;border:1px solid #c4c6d4;border-radius:8px;overflow:hidden;">
@@ -1277,7 +1278,7 @@ function renderTable() {
   tbody.innerHTML = rows.map((r,i) => {
     const typeOpts = `<option value="reg" ${r.type==='reg'?'selected':''}>등록</option><option value="del" ${r.type==='del'?'selected':''}>삭제</option><option value="rereg" ${r.type==='rereg'?'selected':''}>재등록</option>`;
     const typeClass = r.type==='reg'?'type-reg':r.type==='rereg'?'type-rereg':'type-del';
-    const execStyle = r.isExec ? 'background:#fffbeb;' : '';
+    const execStyle = r.isExec ? 'background:#fffbeb;font-weight:700;color:#1a1b21;' : '';
     return `<tr style="${execStyle}">
       <td>${i+1}</td>
       <td><input class="cell-in ${r.rank?'filled':''}" value="${esc(r.rank)}" placeholder="구분" oninput="upd(${i},'rank',this.value)" style="width:70px;"/></td>
