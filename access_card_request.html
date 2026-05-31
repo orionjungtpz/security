@@ -1170,10 +1170,19 @@ function processPasteText(text) {
     const empid = cells[COL.EMPID] || '';
     const name  = cells[COL.NAME]  || '';
     if (!empid && !name) { skipped++; return; }
-    // 중복 체크 (같은 사번이라도 구분이 다르면 허용 — 분실 재등록 등)
+    // 중복 체크: 같은 사번은 [삭제 1개 + 재등록 1개] 조합만 허용, 그 외 동일 구분 중복 차단
     const pasteType = (cells[COL.TYPE] || 'reg').toLowerCase().includes('삭') ? 'del'
                     : (cells[COL.TYPE] || '').toLowerCase().includes('재') ? 'rereg' : 'reg';
-    if (empid && rows.some(r => r.empid === empid && r.type === pasteType)) { skipped++; return; }
+    if (empid) {
+      const existing = rows.filter(r => r.empid === empid);
+      if (existing.some(r => r.type === pasteType)) { skipped++; return; } // 같은 구분 중복 차단
+      if (existing.length > 0) {
+        // 허용 조합: 삭제+재등록만 가능
+        const types = new Set([...existing.map(r => r.type), pasteType]);
+        const allowed = types.size === 2 && types.has('del') && types.has('rereg');
+        if (!allowed) { skipped++; return; }
+      }
+    }
 
     const date    = cells[COL.DATE]    || today;
     const card    = cells[COL.CARD]    || '';
@@ -1221,8 +1230,16 @@ function buildRowFromEmployee(e) {
 }
 
 function addRowFromEmployee(e) {
-  // 같은 사번이라도 구분(type)이 다르면 허용 — 분실 재등록 시 삭제+등록 동시 추가 가능
-  if (rows.some(r => r.empid === e.사번 && r.type === 'reg')) { showMsg('이미 등록 추가된 인원입니다. 구분을 변경하거나 다른 행을 먼저 삭제로 전환하세요.','dup'); return; }
+  // 같은 사번: [삭제 1개 + 재등록 1개] 조합만 허용, 그 외 차단
+  const existing = rows.filter(r => r.empid === e.사번);
+  if (existing.some(r => r.type === 'reg')) {
+    showMsg('이미 등록으로 추가된 인원입니다. 분실 재등록은 구분을 먼저 [삭제]로 변경 후 추가하세요.', 'dup'); return;
+  }
+  if (existing.length > 0) {
+    const types = new Set([...existing.map(r => r.type), 'reg']);
+    const allowed = types.size === 2 && types.has('del') && types.has('rereg');
+    if (!allowed) { showMsg('같은 사번은 [삭제 + 재등록] 조합만 허용됩니다.', 'dup'); return; }
+  }
   rows.push(buildRowFromEmployee(e));
   renderTable();
   showMsg(`✅ ${e.성명} (${e.사번}) 추가됨`, 'ok');
@@ -1257,12 +1274,75 @@ function closeDupeModal() {
   document.getElementById('dupeModal').classList.remove('show');
 }
 
-async function addRow() {
+// ── 분실 재등록: 카드번호 여러 개 선택 모달 ──
+function showMultiCardModal(cards, searchName) {
+  const modal = document.getElementById('dupeModal');
+  document.getElementById('dupeModalSub').textContent = `"${searchName}" — 카드번호가 여러 개입니다. 분실 재등록할 번호를 선택하세요`;
+  document.getElementById('dupeModalList').innerHTML = `
+    <div style="font-size:11px;color:#ba1a1a;background:#ffdad6;border-radius:6px;padding:8px 10px;margin-bottom:10px;">
+      ⚠️ 선택 시 <b>기존 번호(삭제)</b> + <b>신규 번호(재등록)</b> 두 행이 자동 추가됩니다
+    </div>` +
+    cards.map((e, i) => {
+      const nums = [
+        e.송도번호 ? `송도: ${e.송도번호}` : '',
+        e.센터번호 ? `센터: ${e.센터번호}` : '',
+        e.서울역번호 ? `서울역: ${e.서울역번호}` : '',
+        e.센터식당번호 ? `센터식당: ${e.센터식당번호}` : '',
+      ].filter(Boolean).join(' / ');
+      return `<div class="modal-item" onclick="selectMultiCard(${i})">
+        <div class="modal-item-info">
+          <div class="modal-item-name">${e.성명} <span style="font-size:11px;color:#747683;font-weight:400;">(${e.사번})</span></div>
+          <div class="modal-item-sub">${nums || '번호 없음'}</div>
+        </div>
+        <button class="modal-item-btn" style="background:#ba1a1a;color:#fff;">분실 선택</button>
+      </div>`;
+    }).join('');
+  modal._multiCards = cards;
+  modal.classList.add('show');
+}
+
+function selectMultiCard(idx) {
+  const modal = document.getElementById('dupeModal');
+  const cards = modal._multiCards;
+  const lostCard = cards[idx];                          // 분실(삭제)할 카드
+  const newCard  = cards[cards.length - 1 - idx] ?? cards[idx]; // 나머지 최신 카드 (재등록)
+  closeDupeModal();
+
+  // 삭제 행 추가
+  const delRow = buildRowFromEmployee(lostCard);
+  delRow.type = 'del';
+  rows.push(delRow);
+
+  // 재등록 행 추가 (다른 카드번호)
+  const reregRow = buildRowFromEmployee(newCard);
+  reregRow.type = 'rereg';
+  rows.push(reregRow);
+
+  renderTable();
+  showMsg(`✅ ${lostCard.성명} — 삭제(${getMainNum(lostCard)}) + 재등록(${getMainNum(newCard)}) 추가됨`, 'ok');
+  toast(`분실 재등록: ${lostCard.성명} 두 행 추가됨`, 'ok');
+}
+
+function getMainNum(e) {
+  return e.송도번호 || e.센터번호 || e.서울역번호 || e.센터식당번호 || '번호없음';
+}
+
+
   const name  = document.getElementById('sn_name').value.trim();
   const empid = document.getElementById('sn_empid').value.trim();
   if (!name && !empid) { showMsg('성명 또는 사번을 입력해주세요.','no'); return; }
-  // 같은 사번+등록 조합만 차단 (분실 재등록: 삭제행과 등록행 동시 허용)
-  if (empid && rows.some(r => r.empid === empid && r.type === 'reg')) { showMsg('이미 등록으로 추가된 사번입니다. 구분 변경 후 재시도하세요.','dup'); return; }
+  // 같은 사번: [삭제 1개 + 재등록 1개] 조합만 허용, 그 외 차단
+  if (empid) {
+    const existing = rows.filter(r => r.empid === empid);
+    if (existing.some(r => r.type === 'reg')) {
+      showMsg('이미 등록으로 추가된 사번입니다. 분실 재등록은 구분을 먼저 [삭제]로 변경 후 추가하세요.', 'dup'); return;
+    }
+    if (existing.length > 0) {
+      const types = new Set([...existing.map(r => r.type), 'reg']);
+      const allowed = types.size === 2 && types.has('del') && types.has('rereg');
+      if (!allowed) { showMsg('같은 사번은 [삭제 + 재등록] 조합만 허용됩니다.', 'dup'); return; }
+    }
+  }
 
   const btn = document.getElementById('btnAdd');
   const sp  = document.getElementById('spN');
@@ -1278,7 +1358,12 @@ async function addRow() {
         const d = await res.json();
         const r = d.result || d;
         btn.disabled=false; sp.style.display='none'; ico.style.display=''; txt.textContent='추가';
-        if (r.multiple && r.candidates?.length > 0) {
+        if (r.multiple_cards && r.cards?.length > 0) {
+          // 같은 사번, 카드번호 여러 개 → 분실 재등록 선택 모달
+          showMultiCardModal(r.cards, name);
+          document.getElementById('sn_name').value = '';
+          document.getElementById('sn_empid').value = '';
+        } else if (r.multiple && r.candidates?.length > 0) {
           // 동명이인
           showDupeModal(r.candidates, name);
           document.getElementById('sn_name').value = '';
