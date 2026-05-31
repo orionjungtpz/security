@@ -1170,8 +1170,10 @@ function processPasteText(text) {
     const empid = cells[COL.EMPID] || '';
     const name  = cells[COL.NAME]  || '';
     if (!empid && !name) { skipped++; return; }
-    // 중복 체크
-    if (empid && rows.some(r => r.empid === empid)) { skipped++; return; }
+    // 중복 체크 (같은 사번이라도 구분이 다르면 허용 — 분실 재등록 등)
+    const pasteType = (cells[COL.TYPE] || 'reg').toLowerCase().includes('삭') ? 'del'
+                    : (cells[COL.TYPE] || '').toLowerCase().includes('재') ? 'rereg' : 'reg';
+    if (empid && rows.some(r => r.empid === empid && r.type === pasteType)) { skipped++; return; }
 
     const date    = cells[COL.DATE]    || today;
     const card    = cells[COL.CARD]    || '';
@@ -1219,7 +1221,8 @@ function buildRowFromEmployee(e) {
 }
 
 function addRowFromEmployee(e) {
-  if (rows.some(r => r.empid === e.사번)) { showMsg('이미 추가된 인원입니다.','dup'); return; }
+  // 같은 사번이라도 구분(type)이 다르면 허용 — 분실 재등록 시 삭제+등록 동시 추가 가능
+  if (rows.some(r => r.empid === e.사번 && r.type === 'reg')) { showMsg('이미 등록 추가된 인원입니다. 구분을 변경하거나 다른 행을 먼저 삭제로 전환하세요.','dup'); return; }
   rows.push(buildRowFromEmployee(e));
   renderTable();
   showMsg(`✅ ${e.성명} (${e.사번}) 추가됨`, 'ok');
@@ -1258,7 +1261,8 @@ async function addRow() {
   const name  = document.getElementById('sn_name').value.trim();
   const empid = document.getElementById('sn_empid').value.trim();
   if (!name && !empid) { showMsg('성명 또는 사번을 입력해주세요.','no'); return; }
-  if (empid && rows.some(r => r.empid === empid)) { showMsg('이미 추가된 인원입니다.','dup'); return; }
+  // 같은 사번+등록 조합만 차단 (분실 재등록: 삭제행과 등록행 동시 허용)
+  if (empid && rows.some(r => r.empid === empid && r.type === 'reg')) { showMsg('이미 등록으로 추가된 사번입니다. 구분 변경 후 재시도하세요.','dup'); return; }
 
   const btn = document.getElementById('btnAdd');
   const sp  = document.getElementById('spN');
