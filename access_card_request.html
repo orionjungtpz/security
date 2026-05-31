@@ -1300,6 +1300,7 @@ function getMainNum(e) {
 }
 
 
+async function addRow() {
   const name  = document.getElementById('sn_name').value.trim();
   const empid = document.getElementById('sn_empid').value.trim();
   if (!name && !empid) { showMsg('성명 또는 사번을 입력해주세요.','no'); return; }
